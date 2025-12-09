@@ -1,0 +1,176 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+/**
+ * @title BankContract
+ * @dev Smart Contract cho hệ thống giao dịch ngân hàng
+ */
+contract BankContract {
+    
+    // Cấu trúc tài khoản
+    struct Account {
+        address accountOwner;
+        uint256 balance;
+        bool exists;
+        uint256 createdAt;
+    }
+    
+    // Mapping từ địa chỉ ví đến tài khoản
+    mapping(address => Account) public accounts;
+    
+    // Mapping từ số tài khoản đến địa chỉ ví
+    mapping(string => address) public accountNumberToAddress;
+    
+    // Danh sách tất cả địa chỉ ví
+    address[] public allAccounts;
+    
+    // Event cho các giao dịch
+    event Deposit(address indexed account, uint256 amount, uint256 timestamp);
+    event Withdraw(address indexed account, uint256 amount, uint256 timestamp);
+    event Transfer(
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        string transactionHash,
+        uint256 timestamp
+    );
+    event AccountCreated(address indexed account, string accountNumber, uint256 timestamp);
+    
+    // Owner của contract
+    address public owner;
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
+    }
+    
+    modifier accountExists(address _account) {
+        require(accounts[_account].exists, "Account does not exist");
+        _;
+    }
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    /**
+     * @dev Tạo tài khoản mới
+     * @param _accountNumber Số tài khoản ngân hàng
+     */
+    function createAccount(string memory _accountNumber) public {
+        require(!accounts[msg.sender].exists, "Account already exists");
+        require(accountNumberToAddress[_accountNumber] == address(0), "Account number already in use");
+        
+        accounts[msg.sender] = Account({
+            accountOwner: msg.sender,
+            balance: 0,
+            exists: true,
+            createdAt: block.timestamp
+        });
+        
+        accountNumberToAddress[_accountNumber] = msg.sender;
+        allAccounts.push(msg.sender);
+        
+        emit AccountCreated(msg.sender, _accountNumber, block.timestamp);
+    }
+    
+    /**
+     * @dev Nạp tiền vào tài khoản
+     */
+    function deposit() public payable accountExists(msg.sender) {
+        require(msg.value > 0, "Amount must be greater than 0");
+        
+        accounts[msg.sender].balance += msg.value;
+        
+        emit Deposit(msg.sender, msg.value, block.timestamp);
+    }
+    
+    /**
+     * @dev Rút tiền từ tài khoản
+     * @param _amount Số tiền cần rút
+     */
+    function withdraw(uint256 _amount) public accountExists(msg.sender) {
+        require(_amount > 0, "Amount must be greater than 0");
+        require(accounts[msg.sender].balance >= _amount, "Insufficient balance");
+        
+        accounts[msg.sender].balance -= _amount;
+        payable(msg.sender).transfer(_amount);
+        
+        emit Withdraw(msg.sender, _amount, block.timestamp);
+    }
+    
+    /**
+     * @dev Chuyển tiền giữa các tài khoản
+     * @param _to Địa chỉ ví người nhận
+     * @param _amount Số tiền chuyển
+     * @param _transactionHash Hash giao dịch từ database
+     */
+    function transfer(
+        address _to,
+        uint256 _amount,
+        string memory _transactionHash
+    ) public accountExists(msg.sender) {
+        require(_to != address(0), "Invalid recipient address");
+        require(_amount > 0, "Amount must be greater than 0");
+        require(accounts[msg.sender].balance >= _amount, "Insufficient balance");
+        require(accounts[_to].exists, "Recipient account does not exist");
+        
+        accounts[msg.sender].balance -= _amount;
+        accounts[_to].balance += _amount;
+        
+        emit Transfer(msg.sender, _to, _amount, _transactionHash, block.timestamp);
+    }
+    
+    /**
+     * @dev Lấy số dư tài khoản
+     * @param _account Địa chỉ ví
+     * @return Số dư tài khoản
+     */
+    function getBalance(address _account) public view returns (uint256) {
+        require(accounts[_account].exists, "Account does not exist");
+        return accounts[_account].balance;
+    }
+    
+    /**
+     * @dev Kiểm tra tài khoản có tồn tại không
+     * @param _account Địa chỉ ví
+     * @return true nếu tài khoản tồn tại
+     */
+    function accountExist(address _account) public view returns (bool) {
+        return accounts[_account].exists;
+    }
+    
+    /**
+     * @dev Lấy thông tin tài khoản
+     * @param _account Địa chỉ ví
+     * @return Thông tin tài khoản
+     */
+    function getAccountInfo(address _account) public view returns (
+        address accountOwner,
+        uint256 balance,
+        bool exists,
+        uint256 createdAt
+    ) {
+        require(accounts[_account].exists, "Account does not exist");
+        Account memory acc = accounts[_account];
+        return (acc.accountOwner, acc.balance, acc.exists, acc.createdAt);
+    }
+    
+    /**
+     * @dev Lấy tổng số tài khoản
+     * @return Số lượng tài khoản
+     */
+    function getTotalAccounts() public view returns (uint256) {
+        return allAccounts.length;
+    }
+    
+    /**
+     * @dev Lấy địa chỉ từ số tài khoản
+     * @param _accountNumber Số tài khoản
+     * @return Địa chỉ ví
+     */
+    function getAddressByAccountNumber(string memory _accountNumber) public view returns (address) {
+        return accountNumberToAddress[_accountNumber];
+    }
+}
+

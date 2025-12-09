@@ -1,0 +1,19 @@
+{
+  "name": "bank-contract",
+  "version": "1.0.0",
+  "description": "Smart contract for banking system",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "test": "hardhat test"
+  },
+  "keywords": ["blockchain", "banking", "ethereum"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  }
+}
+
