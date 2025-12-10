@@ -17,7 +17,7 @@ CORS(app)
 # Initialize database
 db.init_app(app)
 
-# Create tables
+# Create tables (with error handling)
 with app.app_context():
     db.create_all()
 
@@ -249,6 +249,49 @@ def get_blockchain_balance(wallet_address):
             'wallet_address': wallet_address,
             'balance': float(balance) if balance else 0,
             'exists': exists
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/blockchain/transactions/<wallet_address>', methods=['GET'])
+def get_blockchain_transactions(wallet_address):
+    """Get all transactions for a wallet address from blockchain"""
+    try:
+        offset = request.args.get('offset', 0, type=int)
+        limit = request.args.get('limit', 50, type=int)
+        
+        transactions = blockchain_service.get_account_transactions(wallet_address, offset, limit)
+        total_count = blockchain_service.get_transaction_count(wallet_address)
+        
+        return jsonify({
+            'wallet_address': wallet_address,
+            'transactions': transactions,
+            'total_count': total_count if total_count else 0,
+            'offset': offset,
+            'limit': limit
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/blockchain/transaction/<int:transaction_id>', methods=['GET'])
+def get_blockchain_transaction(transaction_id):
+    """Get transaction details by ID from blockchain"""
+    try:
+        transaction = blockchain_service.get_transaction(transaction_id)
+        if not transaction:
+            return jsonify({'error': 'Transaction not found'}), 404
+        
+        return jsonify(transaction), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/blockchain/transactions/total', methods=['GET'])
+def get_total_blockchain_transactions():
+    """Get total number of transactions in blockchain"""
+    try:
+        total = blockchain_service.get_total_transactions()
+        return jsonify({
+            'total_transactions': total if total else 0
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

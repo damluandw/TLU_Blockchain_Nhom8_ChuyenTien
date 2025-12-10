@@ -8,15 +8,18 @@ class Config:
     # Database Configuration
     SQL_SERVER = os.getenv('SQL_SERVER', 'localhost')
     SQL_DATABASE = os.getenv('SQL_DATABASE', 'BankingBlockchain')
-    SQL_USERNAME = os.getenv('SQL_USERNAME', 'miad')
-    SQL_PASSWORD = os.getenv('SQL_PASSWORD', 'Dapp@2026')
+    SQL_USERNAME = os.getenv('SQL_USERNAME', 'sa')  # Default to 'sa' (SQL Server default)
+    SQL_PASSWORD = os.getenv('SQL_PASSWORD', '')  # Empty default - should be set in .env
 
     # Encode password
     ENCODED_PASSWORD = quote_plus(SQL_PASSWORD)
 
     # SQLAlchemy connection string
+    # Encode server name if it contains backslash (for named instances)
+    encoded_server = quote_plus(SQL_SERVER) if '\\' in SQL_SERVER else SQL_SERVER
+    
     SQLALCHEMY_DATABASE_URI = (
-        f"mssql+pyodbc://{SQL_USERNAME}:{ENCODED_PASSWORD}@{SQL_SERVER}/{SQL_DATABASE}"
+        f"mssql+pyodbc://{SQL_USERNAME}:{ENCODED_PASSWORD}@{encoded_server}/{SQL_DATABASE}"
         "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -1,12 +1,12 @@
-# Hướng Dẫn Chạy Chương Trình Ngân Hàng Blockchain
+# 🚀 Hướng Dẫn Chạy Chương Trình Ngân Hàng Blockchain (Truffle)
 
 ## 📋 Yêu Cầu Hệ Thống
 
-- Python 3.8 trở lên
-- Node.js và npm (để chạy Ganache và Truffle)
-- SQL Server (2017 trở lên)
-- SQL Server Management Studio (SSMS)
-- Trình duyệt có MetaMask extension (Chrome, Edge, Firefox)
+- **Python 3.8+** (để chạy backend)
+- **Node.js và npm** (để chạy Ganache và Truffle)
+- **SQL Server 2017+** (database)
+- **SQL Server Management Studio (SSMS)** (quản lý database)
+- **Trình duyệt có MetaMask** (Chrome, Edge, Firefox)
 
 ---
 
@@ -15,7 +15,7 @@
 1. Mở Command Prompt hoặc PowerShell
 2. Di chuyển đến thư mục dự án:
    ```bash
-   cd D:\00.Code\Blockchain\NganHang
+   cd D:\00.Code\Blockchain\TLU_Blockchain_Nhom8_ChuyenTien
    ```
 
 3. Cài đặt các thư viện Python:
@@ -23,9 +23,9 @@
    pip install -r requirements.txt
    ```
 
-   **Lưu ý:** Nếu gặp lỗi với `pyodbc`, có thể cần cài đặt:
-   - Trên Windows: Tải ODBC Driver 17 for SQL Server từ Microsoft
-   - Hoặc cài qua: `pip install pyodbc`
+   **Lưu ý:** Nếu gặp lỗi với `pyodbc`, cần cài đặt:
+   - Trên Windows: Tải **ODBC Driver 17 for SQL Server** từ Microsoft
+   - Hoặc: `pip install pyodbc`
 
 ---
 
@@ -135,6 +135,8 @@ DEBUG=True
 
 ### Cách 2: Sử dụng Ganache CLI (Command Line)
 
+Nếu bạn muốn dùng command line thay vì GUI:
+
 1. Mở Command Prompt mới
 2. Cài đặt Ganache CLI (nếu chưa có):
    ```bash
@@ -154,16 +156,7 @@ DEBUG=True
 
 ---
 
-### Cách 3: Sử dụng Anvil (Foundry)
-
-Nếu đã cài Foundry:
-```bash
-anvil --port 8545
-```
-
----
-
-## 📝 BƯỚC 5: Cài Đặt Dependencies cho Smart Contract
+## 📝 BƯỚC 5: Cài Đặt Dependencies cho Truffle
 
 1. Mở Command Prompt mới
 2. Di chuyển đến thư mục dự án:
@@ -184,47 +177,69 @@ anvil --port 8545
 
 1. Vẫn ở trong thư mục dự án
 
-2. Compile contract:
+2. **Compile contract:**
    ```bash
    truffle compile
    ```
    
-   Hoặc:
+   Hoặc dùng npm script:
    ```bash
    npm run compile
    ```
 
-3. Deploy contract lên mạng local:
+   Sau khi compile, bạn sẽ thấy thư mục `build/contracts/` được tạo với file `BankContract.json`
+
+3. **Deploy contract lên mạng local:**
    ```bash
    truffle migrate --network localhost
    ```
    
-   Hoặc:
+   Hoặc dùng npm script:
    ```bash
    npm run migrate:local
    ```
 
 4. **QUAN TRỌNG:** Sau khi deploy, bạn sẽ thấy:
    ```
-   BankContract deployed to: 0x...
+   Deploying 'BankContract'
+   -------------------------
+   > transaction hash:    0x...
+   > contract address:    0x1234567890abcdef...
+   > block number:        1
+   > block timestamp:     ...
+   > account:             0x...
+   > balance:             ...
+   > gas used:            ...
+   > gas price:           ...
+   > deployment status:   succeeded
    ```
 
-5. Copy **Contract Address** (0x...)
+5. **Copy Contract Address** (0x...)
 
-6. Lấy ABI từ file compiled:
+6. **Lấy ABI từ file compiled:**
    - Mở file `build/contracts/BankContract.json`
-   - Copy phần `"abi"` (là một mảng JSON)
+   - Tìm phần `"abi"` (là một mảng JSON bắt đầu bằng `[`)
+   - Copy toàn bộ mảng ABI
 
-7. Cập nhật file `backend/.env`:
-   - Dán địa chỉ vào `CONTRACT_ADDRESS=0x...`
-   - Dán một private key từ Ganache vào `PRIVATE_KEY=...`
+7. **Cập nhật file `backend/.env`:**
+   ```env
+   CONTRACT_ADDRESS=0x1234567890abcdef...  # Dán địa chỉ contract ở đây
+   PRIVATE_KEY=0x...                       # Dán một private key từ Ganache
+   ```
 
-8. Cập nhật file `frontend/config.js`:
+8. **Cập nhật file `frontend/config.js`:**
    ```javascript
    const CONFIG = {
        API_URL: 'http://localhost:5000/api',
-       CONTRACT_ADDRESS: '0x...', // Dán địa chỉ contract ở đây
-       CONTRACT_ABI: [...] // Dán ABI từ build/contracts/BankContract.json
+       CONTRACT_ADDRESS: '0x1234567890abcdef...', // Dán địa chỉ contract
+       CONTRACT_ABI: [                          // Dán ABI từ build/contracts/BankContract.json
+           {
+               "inputs": [],
+               "stateMutability": "nonpayable",
+               "type": "constructor"
+           },
+           // ... phần còn lại của ABI
+       ]
    };
    ```
 
@@ -252,10 +267,20 @@ anvil --port 8545
 
 ### 7.3. Import Account từ Ganache
 
-1. Trong MetaMask, click icon account (góc trên bên phải)
-2. Chọn **"Import Account"**
-3. Copy một private key từ Ganache (Bước 4)
-4. Dán vào và click **Import**
+**Nếu dùng Ganache GUI:**
+1. Trong Ganache GUI, click vào một account trong danh sách **ACCOUNTS**
+2. Click icon **Key** (🔑) để xem private key
+3. Copy private key
+4. Trong MetaMask, click icon account (góc trên bên phải)
+5. Chọn **"Import Account"**
+6. Dán private key và click **Import**
+7. Bây giờ bạn có ETH test trong account này!
+
+**Nếu dùng Ganache CLI:**
+1. Copy một private key từ cửa sổ Command Prompt (Bước 4)
+2. Trong MetaMask, click icon account (góc trên bên phải)
+3. Chọn **"Import Account"**
+4. Dán private key và click **Import**
 5. Bây giờ bạn có ETH test trong account này!
 
 ---
@@ -265,7 +290,7 @@ anvil --port 8545
 1. Mở Command Prompt mới
 2. Di chuyển đến thư mục dự án:
    ```bash
-   cd D:\00.Code\Blockchain\NganHang
+   cd D:\00.Code\Blockchain\TLU_Blockchain_Nhom8_ChuyenTien
    ```
 
 3. Chạy backend:
@@ -288,7 +313,13 @@ anvil --port 8545
 6. Kiểm tra backend hoạt động:
    - Mở trình duyệt
    - Truy cập: `http://localhost:5000/api/health`
-   - Bạn sẽ thấy JSON response
+   - Bạn sẽ thấy JSON response:
+     ```json
+     {
+       "status": "healthy",
+       "blockchain_connected": true
+     }
+     ```
 
 ---
 
@@ -304,7 +335,7 @@ anvil --port 8545
 1. Mở Command Prompt mới
 2. Di chuyển đến thư mục frontend:
    ```bash
-   cd D:\00.Code\Blockchain\NganHang\frontend
+   cd D:\00.Code\Blockchain\TLU_Blockchain_Nhom8_ChuyenTien\frontend
    ```
 
 3. Chạy HTTP server:
@@ -330,16 +361,19 @@ anvil --port 8545
 ### 10.2. Tạo Tài Khoản Ngân Hàng
 1. Click tab **"Tài khoản"**
 2. Chọn loại tài khoản
-3. Click **"Tạo tài khoản"**
-4. MetaMask sẽ yêu cầu xác nhận giao dịch
-5. Click **"Confirm"** trong MetaMask
-6. Đợi transaction được confirm
+3. Nhập số tài khoản (hoặc để hệ thống tự tạo)
+4. Click **"Tạo tài khoản"**
+5. MetaMask sẽ yêu cầu xác nhận giao dịch
+6. Click **"Confirm"** trong MetaMask
+7. Đợi transaction được confirm
 
 ### 10.3. Nạp Tiền (Deposit)
-1. Copy địa chỉ ví của bạn từ MetaMask
-2. Trong Ganache, sử dụng account có nhiều ETH
-3. Gửi ETH đến địa chỉ ví của bạn (có thể dùng Remix hoặc script khác)
-4. Hoặc đơn giản: chuyển ETH giữa các accounts trong Ganache
+1. Click tab **"Nạp tiền"** hoặc **"Tài khoản"**
+2. Chọn tài khoản
+3. Nhập số tiền (ETH)
+4. Click **"Nạp tiền"**
+5. Xác nhận trong MetaMask
+6. Đợi transaction được confirm
 
 ### 10.4. Chuyển Tiền
 1. Click tab **"Chuyển tiền"**
@@ -351,9 +385,16 @@ anvil --port 8545
 7. Xác nhận trong MetaMask
 8. Đợi transaction được confirm
 
+   **Lưu ý:** Giao dịch sẽ được lưu vào blockchain với đầy đủ thông tin:
+   - Người chuyển
+   - Người nhận
+   - Số tiền
+   - Thời gian
+
 ### 10.5. Xem Lịch Sử
 1. Click tab **"Lịch sử"**
 2. Xem tất cả các giao dịch đã thực hiện
+3. Có thể xem lịch sử từ database hoặc từ blockchain
 
 ---
 
@@ -371,6 +412,27 @@ Script này sẽ kiểm tra:
 
 ---
 
+## 📊 API Endpoints Mới
+
+### Blockchain Transactions API:
+
+1. **Lấy lịch sử giao dịch từ blockchain:**
+   ```bash
+   GET /api/blockchain/transactions/<wallet_address>?offset=0&limit=50
+   ```
+
+2. **Lấy thông tin một giao dịch cụ thể:**
+   ```bash
+   GET /api/blockchain/transaction/<transaction_id>
+   ```
+
+3. **Lấy tổng số giao dịch:**
+   ```bash
+   GET /api/blockchain/transactions/total
+   ```
+
+---
+
 ## ❗ Xử Lý Lỗi Thường Gặp
 
 ### Lỗi: "Cannot connect to database"
@@ -379,14 +441,21 @@ Script này sẽ kiểm tra:
 - ✅ Kiểm tra firewall không chặn port SQL Server
 
 ### Lỗi: "Connection refused" khi kết nối blockchain
-- ✅ Kiểm tra Ganache đang chạy (Bước 4)
+- ✅ Kiểm tra Ganache GUI đang mở và workspace đã được start (Bước 4)
+- ✅ Hoặc kiểm tra Ganache CLI đang chạy trong Command Prompt
 - ✅ Kiểm tra port 8545 không bị chiếm bởi ứng dụng khác
-- ✅ Kiểm tra `BLOCKCHAIN_NETWORK` trong `.env`
+- ✅ Kiểm tra `BLOCKCHAIN_NETWORK` trong `.env` là `http://127.0.0.1:8545`
+- ✅ Trong Ganache GUI, kiểm tra server đang chạy tại đúng port (hiển thị ở góc trên)
 
 ### Lỗi: "Contract not found"
 - ✅ Đảm bảo đã deploy contract (Bước 6)
 - ✅ Kiểm tra `CONTRACT_ADDRESS` trong `.env` và `frontend/config.js` đúng
 - ✅ Đảm bảo `CONTRACT_ABI` trong `frontend/config.js` đầy đủ
+- ✅ Kiểm tra file `build/contracts/BankContract.json` tồn tại
+
+### Lỗi: "Truffle command not found"
+- ✅ Đảm bảo đã chạy `npm install`
+- ✅ Thử: `npx truffle compile` thay vì `truffle compile`
 
 ### Lỗi: "MetaMask not found"
 - ✅ Đảm bảo MetaMask extension đã được cài đặt
@@ -397,15 +466,19 @@ Script này sẽ kiểm tra:
 - ✅ Đảm bảo account trong MetaMask có ETH
 - ✅ Import account từ Ganache (account có nhiều ETH)
 
+### Lỗi khi migrate: "Network localhost not found"
+- ✅ Kiểm tra `truffle-config.js` có cấu hình network `localhost`
+- ✅ Đảm bảo Ganache đang chạy trên port 8545
+
 ---
 
 ## 📊 Tóm Tắt Các Cửa Sổ Cần Mở
 
 Khi chạy ứng dụng, bạn cần **GIỮ MỞ** các cửa sổ sau:
 
-1. ✅ **Ganache** (Blockchain node) - Port 8545
-2. ✅ **Backend Server** - Port 5000
-3. ✅ **HTTP Server** (nếu dùng) - Port 8000
+1. ✅ **Ganache GUI** (Ứng dụng desktop) hoặc **Ganache CLI** (Command Prompt) - Port 8545
+2. ✅ **Backend Server** (Command Prompt) - Port 5000
+3. ✅ **HTTP Server** (Command Prompt, nếu dùng) - Port 8000
 4. ✅ **Trình duyệt** với MetaMask
 
 ---
@@ -415,8 +488,11 @@ Khi chạy ứng dụng, bạn cần **GIỮ MỞ** các cửa sổ sau:
 - [ ] Python dependencies đã cài (`pip install -r requirements.txt`)
 - [ ] SQL Server database đã tạo và chạy script schema.sql
 - [ ] File `backend/.env` đã tạo và cấu hình đúng
-- [ ] Ganache đang chạy trên port 8545
-- [ ] Smart contract đã được compile và deploy
+- [ ] Ganache GUI đang mở và workspace đã được start (hoặc Ganache CLI đang chạy) trên port 8545
+- [ ] Truffle dependencies đã cài (`npm install`)
+- [ ] Smart contract đã được compile (`truffle compile`)
+- [ ] Smart contract đã được deploy (`truffle migrate --network localhost`)
+- [ ] `CONTRACT_ADDRESS` đã cập nhật trong `backend/.env`
 - [ ] `CONTRACT_ADDRESS` và `CONTRACT_ABI` đã cập nhật trong `frontend/config.js`
 - [ ] MetaMask đã được cài đặt và cấu hình mạng local
 - [ ] Backend server đang chạy
@@ -427,10 +503,30 @@ Khi chạy ứng dụng, bạn cần **GIỮ MỞ** các cửa sổ sau:
 ## 🎉 Hoàn Thành!
 
 Nếu tất cả các bước trên đã hoàn thành, bạn có thể:
-- Tạo tài khoản ngân hàng
-- Thực hiện giao dịch chuyển tiền
-- Xem lịch sử giao dịch
-- Tất cả đều được lưu trên blockchain và database!
+- ✅ Tạo tài khoản ngân hàng
+- ✅ Thực hiện giao dịch chuyển tiền
+- ✅ Xem lịch sử giao dịch
+- ✅ **Tất cả giao dịch được lưu vào blockchain với đầy đủ thông tin:**
+  - Người chuyển
+  - Người nhận
+  - Số tiền
+  - Thời gian
+  - Transaction hash
 
 **Chúc bạn thành công!** 🚀
+
+---
+
+## 📝 Lưu Ý Quan Trọng
+
+1. **Sau khi sửa smart contract**, cần:
+   - Compile lại: `truffle compile`
+   - Migrate lại: `truffle migrate --network localhost` (hoặc `--reset` để reset)
+   - Cập nhật ABI trong `frontend/config.js` từ `build/contracts/BankContract.json`
+
+2. **Khi deploy lại contract**, địa chỉ contract sẽ thay đổi, cần cập nhật:
+   - `backend/.env`: `CONTRACT_ADDRESS`
+   - `frontend/config.js`: `CONTRACT_ADDRESS` và `CONTRACT_ABI`
+
+3. **Giao dịch được lưu vào blockchain** khi gọi hàm `transfer()`, không cần thao tác thêm.
 

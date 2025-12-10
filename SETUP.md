@@ -38,41 +38,70 @@ DEBUG=True
 
 ## Bước 4: Setup Blockchain Node
 
-### Option A: Ganache (Recommended)
+### Option A: Ganache GUI (Phần mềm Desktop) - **KHUYẾN NGHỊ**
+
+1. **Tải và cài đặt:**
+   - Truy cập: https://trufflesuite.com/ganache/
+   - Tải Ganache (Desktop App)
+   - Cài đặt phần mềm
+
+2. **Khởi động:**
+   - Mở ứng dụng Ganache
+   - Click **"New Workspace"** hoặc **"Quickstart"**
+   - Cấu hình:
+     - Port: `8545`
+     - Network ID: `1337`
+   - Click **"Save Workspace"** hoặc **"Start"**
+
+3. **Lấy Private Key:**
+   - Click vào một account trong danh sách
+   - Click icon **Key** (🔑) để xem private key
+   - Copy private key để dùng cho `PRIVATE_KEY` trong `.env`
+
+### Option B: Ganache CLI
 
 ```bash
 npm install -g ganache-cli
 ganache-cli --port 8545
 ```
 
-### Option B: Anvil (Foundry)
+### Option C: Anvil (Foundry)
 
 ```bash
 anvil --port 8545
 ```
 
-### Option C: Hardhat Node
+### Option D: Truffle Develop (Built-in)
 
 ```bash
-cd contracts
-npm install
-npx hardhat node
+truffle develop
 ```
 
-## Bước 5: Deploy Smart Contract
+## Bước 5: Deploy Smart Contract với Truffle
 
-### Với Hardhat:
+### Cài đặt Truffle:
 
 ```bash
-cd contracts
 npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network localhost
+```
+
+### Compile và Deploy:
+
+```bash
+# Compile contracts
+truffle compile
+
+# Deploy lên mạng localhost
+truffle migrate --network localhost
+
+# Hoặc dùng npm scripts
+npm run compile
+npm run migrate:local
 ```
 
 Sau khi deploy:
-- Copy địa chỉ contract và dán vào `backend/.env` (CONTRACT_ADDRESS)
-- Copy ABI và dán vào `frontend/config.js` (CONTRACT_ABI)
+- Copy địa chỉ contract từ output và dán vào `backend/.env` (CONTRACT_ADDRESS)
+- Mở file `build/contracts/BankContract.json`, copy phần `"abi"` và dán vào `frontend/config.js` (CONTRACT_ABI)
 
 ### Với Remix IDE:
 

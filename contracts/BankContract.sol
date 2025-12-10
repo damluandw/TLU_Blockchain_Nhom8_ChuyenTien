@@ -24,6 +24,25 @@ contract BankContract {
     // Danh sách tất cả địa chỉ ví
     address[] public allAccounts;
     
+    // Cấu trúc giao dịch để lưu vào blockchain
+    struct TransactionRecord {
+        address from;
+        address to;
+        uint256 amount;
+        uint256 timestamp;
+        string transactionHash;
+        bool exists;
+    }
+    
+    // Mapping từ transaction ID đến TransactionRecord
+    mapping(uint256 => TransactionRecord) public transactions;
+    
+    // Mapping từ địa chỉ ví đến danh sách transaction IDs
+    mapping(address => uint256[]) public userTransactions;
+    
+    // Tổng số giao dịch
+    uint256 public totalTransactions;
+    
     // Event cho các giao dịch
     event Deposit(address indexed account, uint256 amount, uint256 timestamp);
     event Withdraw(address indexed account, uint256 amount, uint256 timestamp);
@@ -118,6 +137,23 @@ contract BankContract {
         accounts[msg.sender].balance -= _amount;
         accounts[_to].balance += _amount;
         
+        // Lưu thông tin giao dịch vào blockchain
+        uint256 transactionId = totalTransactions;
+        transactions[transactionId] = TransactionRecord({
+            from: msg.sender,
+            to: _to,
+            amount: _amount,
+            timestamp: block.timestamp,
+            transactionHash: _transactionHash,
+            exists: true
+        });
+        
+        // Thêm transaction ID vào danh sách của người chuyển và người nhận
+        userTransactions[msg.sender].push(transactionId);
+        userTransactions[_to].push(transactionId);
+        
+        totalTransactions++;
+        
         emit Transfer(msg.sender, _to, _amount, _transactionHash, block.timestamp);
     }
     
@@ -174,5 +210,73 @@ contract BankContract {
      */
     function getAddressByAccountNumber(string memory _accountNumber) public view returns (address accountAddress) {
         return accountNumberToAddress[_accountNumber];
+    }
+
+    /**
+     * @dev Lấy thông tin giao dịch theo ID
+     * @param _transactionId ID của giao dịch
+     * @return from Địa chỉ người chuyển
+     * @return to Địa chỉ người nhận
+     * @return amount Số tiền
+     * @return timestamp Thời gian giao dịch
+     * @return transactionHash Hash giao dịch
+     */
+    function getTransaction(uint256 _transactionId) public view returns (
+        address from,
+        address to,
+        uint256 amount,
+        uint256 timestamp,
+        string memory transactionHash
+    ) {
+        require(transactions[_transactionId].exists, "Transaction does not exist");
+        TransactionRecord memory tx = transactions[_transactionId];
+        return (tx.from, tx.to, tx.amount, tx.timestamp, tx.transactionHash);
+    }
+
+    /**
+     * @dev Lấy tổng số giao dịch của một địa chỉ ví
+     * @param _account Địa chỉ ví
+     * @return count Số lượng giao dịch
+     */
+    function getTransactionCount(address _account) public view returns (uint256 count) {
+        return userTransactions[_account].length;
+    }
+
+    /**
+     * @dev Lấy danh sách transaction IDs của một địa chỉ ví
+     * @param _account Địa chỉ ví
+     * @param _offset Vị trí bắt đầu
+     * @param _limit Số lượng giao dịch cần lấy
+     * @return transactionIds Mảng các transaction IDs
+     */
+    function getTransactionIds(address _account, uint256 _offset, uint256 _limit) public view returns (uint256[] memory transactionIds) {
+        uint256[] memory allIds = userTransactions[_account];
+        uint256 length = allIds.length;
+        
+        if (_offset >= length) {
+            return new uint256[](0);
+        }
+        
+        uint256 end = _offset + _limit;
+        if (end > length) {
+            end = length;
+        }
+        
+        uint256 resultLength = end - _offset;
+        uint256[] memory result = new uint256[](resultLength);
+        
+        for (uint256 i = 0; i < resultLength; i++) {
+            result[i] = allIds[_offset + i];
+        }
+        
+        return result;
+    }
+
+    /**
+     * @dev Lấy tổng số giao dịch trong hệ thống
+     * @return total Số lượng giao dịch tổng cộng
+     */
+    function getTotalTransactions() public view returns (uint256 total) {
+        return totalTransactions;
     }
 }
