@@ -39,20 +39,22 @@ def create_user():
         email = data.get('email')
         full_name = data.get('full_name')
         wallet_address = data.get('wallet_address')
+        balance = data.get('balance', 0)  # mặc định 0 nếu không có
         
-        if not all([username, email, full_name, wallet_address]):
+        if not all([username, email, full_name, wallet_address, balance]):
             return jsonify({'error': 'Missing required fields'}), 400
         
         # Check if user already exists
         existing_user = User.query.filter_by(WalletAddress=wallet_address).first()
         if existing_user:
-            return jsonify({'error': 'User with this wallet already exists'}), 400
+            return jsonify({'message': 'User already exists', 'user': existing_user.to_dict()}), 200
         
         user = User(
             Username=username,
             Email=email,
             FullName=full_name,
-            WalletAddress=wallet_address
+            WalletAddress=wallet_address,
+            Balance=balance
         )
         
         db.session.add(user)
@@ -82,6 +84,7 @@ def create_account():
         user_id = data.get('user_id')
         account_type = data.get('account_type', 'CHECKING')
         wallet_address = data.get('wallet_address')
+        balance = data.get('balance', 0)  # mặc định 0 nếu không có
         
         if not user_id or not wallet_address:
             return jsonify({'error': 'Missing required fields'}), 400
@@ -97,7 +100,8 @@ def create_account():
             UserID=user_id,
             AccountNumber=account_number,
             AccountType=account_type,
-            BlockchainAddress=wallet_address
+            BlockchainAddress=wallet_address,
+            Balance=balance
         )
         
         db.session.add(account)

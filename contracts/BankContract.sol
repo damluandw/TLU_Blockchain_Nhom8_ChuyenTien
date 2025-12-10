@@ -124,26 +124,29 @@ contract BankContract {
     /**
      * @dev Lấy số dư tài khoản
      * @param _account Địa chỉ ví
-     * @return Số dư tài khoản
+     * @return balance Số dư tài khoản
      */
-    function getBalance(address _account) public view returns (uint256) {
+    function getBalance(address _account) public view returns (uint256 balance) {
         require(accounts[_account].exists, "Account does not exist");
         return accounts[_account].balance;
     }
-    
+
     /**
      * @dev Kiểm tra tài khoản có tồn tại không
      * @param _account Địa chỉ ví
-     * @return true nếu tài khoản tồn tại
+     * @return exists true nếu tài khoản tồn tại
      */
-    function accountExist(address _account) public view returns (bool) {
+    function accountExist(address _account) public view returns (bool exists) {
         return accounts[_account].exists;
     }
-    
+
     /**
      * @dev Lấy thông tin tài khoản
      * @param _account Địa chỉ ví
-     * @return Thông tin tài khoản
+     * @return accountOwner Chủ tài khoản
+     * @return balance Số dư tài khoản
+     * @return exists Tài khoản có tồn tại hay không
+     * @return createdAt Thời gian tạo tài khoản
      */
     function getAccountInfo(address _account) public view returns (
         address accountOwner,
@@ -155,22 +158,21 @@ contract BankContract {
         Account memory acc = accounts[_account];
         return (acc.accountOwner, acc.balance, acc.exists, acc.createdAt);
     }
-    
+
     /**
      * @dev Lấy tổng số tài khoản
-     * @return Số lượng tài khoản
+     * @return totalAccounts Số lượng tài khoản
      */
-    function getTotalAccounts() public view returns (uint256) {
+    function getTotalAccounts() public view returns (uint256 totalAccounts) {
         return allAccounts.length;
     }
-    
+
     /**
      * @dev Lấy địa chỉ từ số tài khoản
      * @param _accountNumber Số tài khoản
-     * @return Địa chỉ ví
+     * @return accountAddress Địa chỉ ví
      */
-    function getAddressByAccountNumber(string memory _accountNumber) public view returns (address) {
+    function getAddressByAccountNumber(string memory _accountNumber) public view returns (address accountAddress) {
         return accountNumberToAddress[_accountNumber];
     }
 }
-

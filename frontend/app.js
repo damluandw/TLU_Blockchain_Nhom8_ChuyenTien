@@ -42,11 +42,8 @@ function initializeTabs() {
 async function checkMetaMask() {
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Request account access
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts.length > 0) {
-                await connectWallet();
-            }
+            if (accounts.length > 0) await connectWallet();
         } catch (error) {
             console.error('Error checking MetaMask:', error);
         }
@@ -59,7 +56,7 @@ async function checkMetaMask() {
 
 // Connect Wallet
 async function connectWallet() {
-    if (typeof window.ethereum === 'undefined') {
+    if (!window.ethereum) {
         showNotification('MetaMask chưa được cài đặt!', 'error');
         return;
     }
@@ -70,26 +67,43 @@ async function connectWallet() {
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
 
-        document.getElementById('wallet-address').textContent = 
-            `${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+        document.getElementById('wallet-address').textContent =
+            `${userAddress.substring(0, 6)}...${userAddress.slice(-4)}`;
         document.getElementById('connect-wallet-btn').textContent = 'Đã kết nối';
 
-        // Load user data
-        await loadUserData();
-        loadDashboard();
-        loadAccounts();
-        loadTransactions();
+        // Lấy số dư từ blockchain
+        const balanceWei = await provider.getBalance(userAddress);
+        const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
+        console.log(`Số dư ETH: ${balanceEth} ETH`);
+        // **Lưu wallet vào database**
+        await fetch(`${CONFIG.API_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet_address: userAddress,
+                username: userAddress.substring(0, 8),
+                email: `${userAddress.substring(0, 8)}@wallet.com`,
+                full_name: 'Blockchain User',
+                balance: balanceEth   // <-- thêm trường balance
+            })
+        });
+
+        // Load dashboard/accounts/transactions
+        await loadDashboard();
+        await loadAccounts();
+        await loadTransactions();
 
         // Listen for account changes
-        window.ethereum.on('accountsChanged', (accounts) => {
+        window.ethereum.on('accountsChanged', async (accounts) => {
             if (accounts.length === 0) {
                 userAddress = null;
                 document.getElementById('wallet-address').textContent = 'Chưa kết nối ví';
                 document.getElementById('connect-wallet-btn').textContent = 'Kết nối MetaMask';
             } else {
-                connectWallet();
+                await connectWallet();
             }
         });
+
     } catch (error) {
         console.error('Error connecting wallet:', error);
         showNotification('Lỗi kết nối ví: ' + error.message, 'error');
@@ -146,11 +160,14 @@ async function loadDashboard() {
             document.getElementById('account-count').textContent = accounts.length;
 
             let totalBalance = 0;
+            console.log('accounts', accounts);
             accounts.forEach(acc => {
-                if (acc.blockchain_balance) {
-                    totalBalance += acc.blockchain_balance;
+            console.log('acc.Balance', acc.Balance);
+                if (acc.Balance) {
+                    totalBalance += acc.Balance;
                 }
             });
+            console.log('totalBalance', totalBalance);
             document.getElementById('total-balance').textContent = totalBalance.toFixed(4) + ' ETH';
         }
 
@@ -190,7 +207,7 @@ async function loadAccounts() {
                     <div class="account-info">
                         <h4>${acc.AccountNumber}</h4>
                         <p>Loại: ${acc.AccountType}</p>
-                        <p>Số dư: ${acc.blockchain_balance ? acc.blockchain_balance.toFixed(4) : '0'} ETH</p>
+                        <p>Số dư: ${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH</p>
                     </div>
                 </div>
             `).join('');
@@ -199,7 +216,7 @@ async function loadAccounts() {
         // Populate transfer form
         const fromAccountSelect = document.getElementById('from-account');
         fromAccountSelect.innerHTML = accounts.map(acc => 
-            `<option value="${acc.AccountID}">${acc.AccountNumber} (${acc.blockchain_balance ? acc.blockchain_balance.toFixed(4) : '0'} ETH)</option>`
+            `<option value="${acc.AccountID}">${acc.AccountNumber} (${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH)</option>`
         ).join('');
     } catch (error) {
         console.error('Error loading accounts:', error);
@@ -251,7 +268,8 @@ document.getElementById('create-account-form').addEventListener('submit', async 
             body: JSON.stringify({
                 user_id: user.UserID,
                 account_type: accountType,
-                wallet_address: userAddress
+                wallet_address: userAddress,
+                balance:  user.Balance
             })
         });
 

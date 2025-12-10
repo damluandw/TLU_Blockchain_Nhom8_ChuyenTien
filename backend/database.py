@@ -17,6 +17,7 @@ class User(db.Model):
     CreatedAt = db.Column(db.DateTime, default=datetime.utcnow)
     UpdatedAt = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     IsActive = db.Column(db.Boolean, default=True)
+    Balance = db.Column(db.Numeric(18, 2), default=0.00)
     
     accounts = db.relationship('Account', backref='user', lazy=True)
     
@@ -28,7 +29,8 @@ class User(db.Model):
             'FullName': self.FullName,
             'WalletAddress': self.WalletAddress,
             'CreatedAt': self.CreatedAt.isoformat() if self.CreatedAt else None,
-            'IsActive': self.IsActive
+            'IsActive': self.IsActive,
+            'Balance': float(self.Balance) if self.Balance else 0.00,
         }
 
 class Account(db.Model):
