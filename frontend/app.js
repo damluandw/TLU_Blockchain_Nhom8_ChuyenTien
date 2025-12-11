@@ -315,6 +315,9 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
     showLoading(true);
 
+
+
+    
     try {
         const fromAccountId = document.getElementById('from-account').value;
         const toAddress = document.getElementById('to-address').value;
@@ -339,6 +342,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
         // Execute transfer on blockchain
         const amountWei = ethers.utils.parseEther(amount);
+        console.log('Transferring', amountWei.toString(), 'wei to', toAddress);
         const transactionHash = `TXN${Date.now()}`;
 
         const tx = await contract.transfer(toAddress, amountWei, transactionHash);

@@ -169,7 +169,7 @@ def create_transaction():
         data = request.get_json()
         from_account_id = data.get('from_account_id')
         to_account_id = data.get('to_account_id')
-        amount = data.get('amount')
+        amount = float(data.get('amount'))
         transaction_type = data.get('transaction_type', 'TRANSFER')
         description = data.get('description', '')
         blockchain_tx_hash = data.get('blockchain_tx_hash')  # From MetaMask
@@ -201,8 +201,8 @@ def create_transaction():
         db.session.add(transaction)
 
         # Update balances
-        from_account.Balance -= amount
-        to_account.Balance += amount
+        from_account.Balance = float(from_account.Balance) - amount
+        to_account.Balance = float(to_account.Balance) + amount
 
         db.session.commit()
 
