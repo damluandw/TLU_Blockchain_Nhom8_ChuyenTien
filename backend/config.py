@@ -8,26 +8,29 @@ class Config:
     # Database Configuration
     SQL_SERVER = os.getenv('SQL_SERVER', 'localhost')
     SQL_DATABASE = os.getenv('SQL_DATABASE', 'BankingBlockchain')
-    SQL_USERNAME = os.getenv('SQL_USERNAME', 'miad')
-    SQL_PASSWORD = os.getenv('SQL_PASSWORD', 'Dapp@2026')
+    SQL_USERNAME = os.getenv('SQL_USERNAME', 'miad')  # Default to 'sa' (SQL Server default)
+    SQL_PASSWORD = os.getenv('SQL_PASSWORD', 'Dapp@2026')  # Empty default - should be set in .env
 
     # Encode password
     ENCODED_PASSWORD = quote_plus(SQL_PASSWORD)
 
     # SQLAlchemy connection string
+    # Encode server name if it contains backslash (for named instances)
+    encoded_server = quote_plus(SQL_SERVER) if '\\' in SQL_SERVER else SQL_SERVER
+    
     SQLALCHEMY_DATABASE_URI = (
-        f"mssql+pyodbc://{SQL_USERNAME}:{ENCODED_PASSWORD}@{SQL_SERVER}/{SQL_DATABASE}"
+        f"mssql+pyodbc://{SQL_USERNAME}:{ENCODED_PASSWORD}@{encoded_server}/{SQL_DATABASE}"
         "?driver=ODBC+Driver+17+for+SQL+Server&TrustServerCertificate=yes"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Blockchain config
-    BLOCKCHAIN_NETWORK = os.getenv('BLOCKCHAIN_NETWORK', 'http://127.0.0.1:8545')
-    CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS', '')
-    PRIVATE_KEY = os.getenv('PRIVATE_KEY', '')
+    BLOCKCHAIN_NETWORK = os.getenv('BLOCKCHAIN_NETWORK', 'HTTP://127.0.0.1:7545')
+    CONTRACT_ADDRESS = os.getenv('CONTRACT_ADDRESS', '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512')
+    PRIVATE_KEY = os.getenv('PRIVATE_KEY', '0xc8063286f77fedfc2d9e3468e59f98a903f80dcaec3cd188192fd31ccac96ed6')
 
     # Flask config
-    SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
+    SECRET_KEY = os.getenv('SECRET_KEY', '0x5f88514565012345650123456501234565012345650123456501234565012345')
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
     # Gas config

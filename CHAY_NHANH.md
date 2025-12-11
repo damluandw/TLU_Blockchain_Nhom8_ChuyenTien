@@ -26,27 +26,42 @@ DEBUG=True
 ```
 
 ### ✅ Bước 4: Chạy Ganache
+
+**Cách 1: Ganache GUI (Phần mềm) - Khuyến nghị**
+1. Tải Ganache từ: https://trufflesuite.com/ganache/
+2. Mở ứng dụng → Click **"New Workspace"**
+3. Cấu hình:
+   - Port: `8545`
+   - Network ID: `1337`
+   - Click **"Save Workspace"**
+4. Copy **PRIVATE KEY** của một account (click vào account → icon Key 🔑)
+
+**Cách 2: Ganache CLI**
 ```bash
+npm install -g ganache-cli
 ganache-cli --port 8545
 ```
 **Copy 1 private key** để dùng sau!
 
 ### ✅ Bước 5: Cài npm packages
 ```bash
-cd contracts
 npm install
 ```
 
-### ✅ Bước 6: Deploy Contract
+### ✅ Bước 6: Compile và Deploy Contract với Truffle
 ```bash
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network localhost
+truffle compile
+truffle migrate --network localhost
 ```
-**Copy Contract Address và ABI** từ output!
+**Copy Contract Address** từ output!
+
+Sau khi compile, ABI sẽ có trong: `build/contracts/BankContract.json`
 
 ### ✅ Bước 7: Cập nhật Config
 - `backend/.env`: Thêm `CONTRACT_ADDRESS` và `PRIVATE_KEY`
-- `frontend/config.js`: Thêm `CONTRACT_ADDRESS` và `CONTRACT_ABI`
+- `frontend/config.js`: 
+  - Thêm `CONTRACT_ADDRESS` (copy từ output deploy)
+  - Copy `CONTRACT_ABI` từ file `build/contracts/BankContract.json` (mở file, copy phần "abi")
 
 ### ✅ Bước 8: Setup MetaMask
 - Thêm mạng: Localhost 8545 (RPC: http://127.0.0.1:8545, ChainID: 1337)
@@ -83,5 +98,8 @@ Truy cập: http://localhost:8000
 
 ---
 
-Xem chi tiết đầy đủ trong file **HUONG_DAN_CHAY.md**
+## 📚 Xem Thêm
+
+- **Hướng dẫn chi tiết:** Xem file **HUONG_DAN_CHAY_MOI.md** (hướng dẫn đầy đủ với Truffle)
+- **Hướng dẫn cũ:** File **HUONG_DAN_CHAY.md** (đã cập nhật một phần)
 

@@ -52,16 +52,28 @@ Xem file [SETUP.md](SETUP.md) để có hướng dẫn chi tiết từng bước
    - Tạo file `backend/.env` (xem `backend/.env.example`)
 
 4. **Khởi động blockchain node:**
+   
+   **Cách 1: Ganache GUI (Khuyến nghị)**
+   - Tải từ: https://trufflesuite.com/ganache/
+   - Mở ứng dụng → New Workspace → Port: 8545 → Start
+   
+   **Cách 2: Ganache CLI**
    ```bash
+   npm install -g ganache-cli
    ganache-cli --port 8545
    ```
 
-5. **Deploy Smart Contract:**
+5. **Deploy Smart Contract với Truffle:**
    ```bash
-   cd contracts
    npm install
-   npx hardhat compile
-   npx hardhat run scripts/deploy.js --network localhost
+   truffle compile
+   truffle migrate --network localhost
+   ```
+   
+   Hoặc dùng npm scripts:
+   ```bash
+   npm run compile
+   npm run migrate:local
    ```
 
 6. **Cập nhật contract address:**
@@ -120,6 +132,20 @@ Truy cập: `http://localhost:8000`
 - `GET /api/transactions/<transaction_id>` - Lấy thông tin giao dịch
 - `GET /api/transactions/account/<account_id>` - Lấy giao dịch theo tài khoản
 - `GET /api/blockchain/balance/<wallet_address>` - Lấy số dư từ blockchain
+- `GET /api/blockchain/transactions/<wallet_address>` - Lấy lịch sử giao dịch từ blockchain
+- `GET /api/blockchain/transaction/<transaction_id>` - Lấy thông tin giao dịch theo ID
+- `GET /api/blockchain/transactions/total` - Lấy tổng số giao dịch trong hệ thống
+
+## Tính năng mới
+
+- **Lưu giao dịch vào blockchain**: Mọi giao dịch chuyển tiền được lưu vào blockchain với đầy đủ thông tin:
+  - Người chuyển (from)
+  - Người nhận (to)
+  - Số tiền (amount)
+  - Thời gian (timestamp)
+  - Transaction hash
+
+- **Query lịch sử giao dịch**: Có thể truy vấn lịch sử giao dịch trực tiếp từ blockchain
 
 ## Lưu ý
 
@@ -127,6 +153,7 @@ Truy cập: `http://localhost:8000`
 - Private key trong `.env` chỉ dùng cho development, không commit vào git
 - Cần compile và deploy smart contract trước khi sử dụng
 - MetaMask cần được cấu hình để kết nối với mạng local
+- Sau khi deploy contract mới, cần cập nhật ABI trong `frontend/config.js` từ file `build/contracts/BankContract.json`
 
 ## License
 

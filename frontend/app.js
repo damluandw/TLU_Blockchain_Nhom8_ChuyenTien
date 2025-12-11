@@ -162,7 +162,7 @@ async function loadDashboard() {
             let totalBalance = 0;
             console.log('accounts', accounts);
             accounts.forEach(acc => {
-            console.log('acc.Balance', acc.Balance);
+                console.log('acc.Balance', acc.Balance);
                 if (acc.Balance) {
                     totalBalance += acc.Balance;
                 }
@@ -215,7 +215,7 @@ async function loadAccounts() {
 
         // Populate transfer form
         const fromAccountSelect = document.getElementById('from-account');
-        fromAccountSelect.innerHTML = accounts.map(acc => 
+        fromAccountSelect.innerHTML = accounts.map(acc =>
             `<option value="${acc.AccountID}">${acc.AccountNumber} (${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH)</option>`
         ).join('');
     } catch (error) {
@@ -307,7 +307,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
         showNotification('Vui lòng kết nối ví trước!', 'error');
         return;
     }
-    
+
     if (!contract) {
         showNotification('Contract chưa được cấu hình. Vui lòng kiểm tra CONTRACT_ADDRESS và CONTRACT_ABI trong config.js', 'error');
         return;
@@ -446,4 +446,3 @@ function showNotification(message, type = 'info') {
         notification.classList.add('hidden');
     }, 5000);
 }
-

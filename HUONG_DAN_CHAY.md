@@ -3,7 +3,7 @@
 ## 📋 Yêu Cầu Hệ Thống
 
 - Python 3.8 trở lên
-- Node.js và npm (để chạy Ganache và Hardhat)
+- Node.js và npm (để chạy Ganache và Truffle)
 - SQL Server (2017 trở lên)
 - SQL Server Management Studio (SSMS)
 - Trình duyệt có MetaMask extension (Chrome, Edge, Firefox)
@@ -81,7 +81,59 @@ DEBUG=True
 
 ## 🚀 BƯỚC 4: Khởi Động Blockchain Node (Ganache)
 
-### Cách 1: Cài đặt Ganache CLI
+### Cách 1: Sử dụng Ganache GUI (Phần mềm Desktop) - **KHUYẾN NGHỊ**
+
+#### 4.1. Tải và Cài Đặt Ganache GUI
+
+1. Truy cập trang web: https://trufflesuite.com/ganache/
+2. Tải **Ganache** (phiên bản GUI - Desktop App)
+3. Cài đặt phần mềm:
+   - Windows: Chạy file `.exe` đã tải
+   - Mac: Mở file `.dmg` và kéo vào Applications
+   - Linux: Giải nén và chạy file thực thi
+
+#### 4.2. Khởi Động Ganache GUI
+
+1. Mở ứng dụng **Ganache** từ menu Start (Windows) hoặc Applications (Mac)
+2. Click vào **"New Workspace"** (hoặc **"Quickstart"** nếu lần đầu)
+3. Cấu hình workspace:
+   - **Workspace Name:** Đặt tên (ví dụ: "Banking Blockchain")
+   - **Server** tab:
+     - **Hostname:** `127.0.0.1`
+     - **Port:** `8545` (mặc định)
+     - **Network ID:** `1337` (hoặc để mặc định)
+   - **Accounts & Keys** tab:
+     - **Number of accounts:** 10 (mặc định)
+     - **Default balance:** 100 ETH (mặc định)
+4. Click **"Save Workspace"** hoặc **"Start"**
+
+#### 4.3. Lấy Thông Tin Từ Ganache GUI
+
+1. Sau khi khởi động, bạn sẽ thấy giao diện với:
+   - **ACCOUNTS** tab: Danh sách các accounts với địa chỉ và số dư
+   - **BLOCKS** tab: Các blocks đã được tạo
+   - **TRANSACTIONS** tab: Các giao dịch
+
+2. **Lấy Private Key:**
+   - Click vào một account trong danh sách **ACCOUNTS**
+   - Click vào icon **"Key"** (🔑) hoặc click vào account để xem chi tiết
+   - Copy **PRIVATE KEY** (bắt đầu bằng `0x...`)
+   - Lưu lại để dùng cho `PRIVATE_KEY` trong `backend/.env`
+
+3. **Lấy Account Address:**
+   - Copy **ADDRESS** của account (bắt đầu bằng `0x...`)
+   - Dùng để import vào MetaMask
+
+#### 4.4. Kiểm Tra Ganache Đang Chạy
+
+- ✅ Ứng dụng Ganache GUI đang mở và hiển thị workspace
+- ✅ Có 10 accounts với số dư 100 ETH mỗi account
+- ✅ Server đang chạy tại `127.0.0.1:8545` (hiển thị ở góc trên)
+- ✅ **GIỮ ỨNG DỤNG GANACHE MỞ** trong suốt quá trình chạy ứng dụng
+
+---
+
+### Cách 2: Sử dụng Ganache CLI (Command Line)
 
 1. Mở Command Prompt mới
 2. Cài đặt Ganache CLI (nếu chưa có):
@@ -98,29 +150,28 @@ DEBUG=True
    - Private keys của các accounts
    - Copy một private key để dùng cho `PRIVATE_KEY` trong `.env`
 
-### Cách 2: Sử dụng Anvil (Foundry)
+5. **GIỮ CỬA SỔ NÀY MỞ** trong suốt quá trình chạy ứng dụng
+
+---
+
+### Cách 3: Sử dụng Anvil (Foundry)
 
 Nếu đã cài Foundry:
 ```bash
 anvil --port 8545
 ```
 
-### Kiểm tra Ganache đang chạy:
-- Bạn sẽ thấy danh sách 10 accounts với private keys
-- Server đang listen tại `127.0.0.1:8545`
-- **GIỮ CỬA SỔ NÀY MỞ** trong suốt quá trình chạy ứng dụng
-
 ---
 
 ## 📝 BƯỚC 5: Cài Đặt Dependencies cho Smart Contract
 
 1. Mở Command Prompt mới
-2. Di chuyển đến thư mục contracts:
+2. Di chuyển đến thư mục dự án:
    ```bash
-   cd D:\00.Code\Blockchain\NganHang\contracts
+   cd D:\00.Code\Blockchain\TLU_Blockchain_Nhom8_ChuyenTien
    ```
 
-3. Cài đặt Node.js packages:
+3. Cài đặt Node.js packages (Truffle):
    ```bash
    npm install
    ```
@@ -129,38 +180,51 @@ anvil --port 8545
 
 ---
 
-## 📦 BƯỚC 6: Compile và Deploy Smart Contract
+## 📦 BƯỚC 6: Compile và Deploy Smart Contract với Truffle
 
-1. Vẫn ở trong thư mục `contracts/`
+1. Vẫn ở trong thư mục dự án
 
 2. Compile contract:
    ```bash
-   npx hardhat compile
+   truffle compile
+   ```
+   
+   Hoặc:
+   ```bash
+   npm run compile
    ```
 
 3. Deploy contract lên mạng local:
    ```bash
-   npx hardhat run scripts/deploy.js --network localhost
+   truffle migrate --network localhost
+   ```
+   
+   Hoặc:
+   ```bash
+   npm run migrate:local
    ```
 
 4. **QUAN TRỌNG:** Sau khi deploy, bạn sẽ thấy:
    ```
    BankContract deployed to: 0x...
-   Contract ABI: [...]
    ```
 
-5. Copy **Contract Address** (0x...) và **ABI**
+5. Copy **Contract Address** (0x...)
 
-6. Cập nhật file `backend/.env`:
+6. Lấy ABI từ file compiled:
+   - Mở file `build/contracts/BankContract.json`
+   - Copy phần `"abi"` (là một mảng JSON)
+
+7. Cập nhật file `backend/.env`:
    - Dán địa chỉ vào `CONTRACT_ADDRESS=0x...`
    - Dán một private key từ Ganache vào `PRIVATE_KEY=...`
 
-7. Cập nhật file `frontend/config.js`:
+8. Cập nhật file `frontend/config.js`:
    ```javascript
    const CONFIG = {
        API_URL: 'http://localhost:5000/api',
        CONTRACT_ADDRESS: '0x...', // Dán địa chỉ contract ở đây
-       CONTRACT_ABI: [...] // Dán ABI ở đây (mảng JSON)
+       CONTRACT_ABI: [...] // Dán ABI từ build/contracts/BankContract.json
    };
    ```
 

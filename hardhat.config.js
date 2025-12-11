@@ -28,4 +28,3 @@ module.exports = {
     artifacts: "./artifacts"
   }
 };
-

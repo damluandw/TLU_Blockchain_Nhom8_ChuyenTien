@@ -39,8 +39,8 @@ build/
 dist/
 *.egg-info/
 
-# Contracts compiled
-contracts/artifacts/
-contracts/cache/
-contracts/BankContract.json
+# Truffle build artifacts
+build/contracts/
+# Keep build/ directory but ignore contract JSON files
+# build/ is already ignored above
 
