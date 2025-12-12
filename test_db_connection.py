@@ -1,31 +1,15 @@
-"""
-Test database connection
-"""
-import sys
-import os
-sys.path.insert(0, 'backend')
+import pyodbc
 
-from app import app
-from database import db
-
-with app.app_context():
-    try:
-        print("Testing database connection...")
-        connection = db.engine.connect()
-        print("✓ Database connection successful!")
-        
-        print("\nCreating tables...")
-        db.create_all()
-        print("✓ Database tables created/verified successfully!")
-        
-        connection.close()
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        print("\nPlease check:")
-        print("1. SQL Server is running")
-        print("2. Database 'BankingBlockchain' exists")
-        print("3. Connection settings in backend/.env are correct")
-        print("4. ODBC Driver 17 for SQL Server is installed")
-        import traceback
-        traceback.print_exc()
-
+try:
+    conn = pyodbc.connect(
+        'DRIVER={ODBC Driver 17 for SQL Server};'
+        'SERVER=DESKTOP-CRFJV4A\\SQL2022;'
+        'DATABASE=DB_BLOCKCHAIN;'
+        'UID=sa;'
+        'PWD=12345;'
+        'TrustServerCertificate=yes'
+    )
+    print("✓ Kết nối thành công!")
+    conn.close()
+except Exception as e:
+    print(f"✗ Lỗi kết nối: {e}")

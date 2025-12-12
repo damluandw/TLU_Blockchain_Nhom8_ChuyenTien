@@ -148,7 +148,7 @@ async function connectWallet() {
                     params: [{
                         chainId: '0x539',
                         chainName: 'ganache local',
-                        rpcUrls: ['http://127.0.0.1:8545'],
+                        rpcUrls: ['http://127.0.0.1:7545'],
                         nativeCurrency: {
                             name: 'ETH',
                             symbol: 'ETH',
@@ -409,25 +409,44 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
     }
 
     if (!contract) {
-        showNotification('Contract chưa được cấu hình. Vui lòng kiểm tra CONTRACT_ADDRESS và CONTRACT_ABI trong config.js', 'error');
+        showNotification('Contract chưa được cấu hình!', 'error');
         return;
     }
 
     showLoading(true);
 
-
-
-    
     try {
         const fromAccountId = document.getElementById('from-account').value;
         const toAddress = document.getElementById('to-address').value;
         const amount = document.getElementById('transfer-amount').value;
         const description = document.getElementById('transfer-description').value;
 
+        // Validate input
+        if (!fromAccountId || !toAddress || !amount) {
+            throw new Error('Vui lòng điền đầy đủ thông tin');
+        }
+
+        // Validate Ethereum address
+        if (!ethers.utils.isAddress(toAddress)) {
+            throw new Error('Địa chỉ ví không hợp lệ');
+        }
+
+        console.log('=== BẮT ĐẦU CHUYỂN TIỀN ===');
+        console.log('From Account ID:', fromAccountId);
+        console.log('To Address:', toAddress);
+        console.log('Amount:', amount);
+
         // Get account info
         const accountResponse = await fetch(`${CONFIG.API_URL}/accounts/${fromAccountId}`);
-        if (!accountResponse.ok) throw new Error('Account not found');
+        if (!accountResponse.ok) throw new Error('Không tìm thấy tài khoản nguồn');
         const fromAccount = await accountResponse.json();
+        
+        console.log('From Account:', fromAccount);
+
+        // Check balance
+        if (parseFloat(fromAccount.Balance) < parseFloat(amount)) {
+            throw new Error('Số dư không đủ');
+        }
 
         // Get to account
         let toAccountResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${toAddress}`);
@@ -437,16 +456,35 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
             const toAccounts = await toAccountResponse.json();
             if (toAccounts.length > 0) {
                 toAccountId = toAccounts[0].AccountID;
+                console.log('To Account ID:', toAccountId);
+            } else {
+                console.log('Người nhận chưa có tài khoản trong hệ thống');
             }
+        }
+
+        // Check if recipient account exists on blockchain
+        const recipientExists = await contract.accountExist(toAddress);
+        console.log('Recipient exists on blockchain:', recipientExists);
+        
+        if (!recipientExists) {
+            throw new Error('Địa chỉ nhận chưa có tài khoản trên blockchain. Người nhận cần tạo tài khoản trước.');
         }
 
         // Execute transfer on blockchain
         const amountWei = ethers.utils.parseEther(amount);
-        console.log('Transferring', amountWei.toString(), 'wei to', toAddress);
         const transactionHash = `TXN${Date.now()}`;
+        
+        console.log('Calling contract.transfer()...');
+        console.log('Amount in Wei:', amountWei.toString());
+        console.log('Transaction Hash:', transactionHash);
 
         const tx = await contract.transfer(toAddress, amountWei, transactionHash);
+        console.log('Transaction sent:', tx.hash);
+        
+        showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
+        
         const receipt = await tx.wait();
+        console.log('Transaction confirmed:', receipt);
 
         // Create transaction in database
         const txResponse = await fetch(`${CONFIG.API_URL}/transactions`, {
@@ -454,7 +492,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 from_account_id: parseInt(fromAccountId),
-                to_account_id: toAccountId || fromAccountId, // Fallback if not found
+                to_account_id: toAccountId || parseInt(fromAccountId), // Fallback
                 amount: parseFloat(amount),
                 transaction_type: 'TRANSFER',
                 description: description,
@@ -462,16 +500,41 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
             })
         });
 
-        if (!txResponse.ok) throw new Error('Failed to save transaction');
+        if (!txResponse.ok) {
+            const errorData = await txResponse.json();
+            console.error('Database error:', errorData);
+            throw new Error('Lỗi lưu giao dịch vào database: ' + (errorData.error || 'Unknown'));
+        }
 
         showNotification('Chuyển tiền thành công!', 'success');
         document.getElementById('transfer-form').reset();
-        loadAccounts();
-        loadTransactions();
-        loadDashboard();
+        
+        // Reload data
+        await loadAccounts();
+        await loadTransactions();
+        await loadDashboard();
+        
     } catch (error) {
-        console.error('Error transferring:', error);
-        showNotification('Lỗi chuyển tiền: ' + error.message, 'error');
+        console.error('=== LỖI CHUYỂN TIỀN ===');
+        console.error('Error:', error);
+        
+        let errorMessage = 'Lỗi chuyển tiền: ';
+        
+        if (error.code === 'CALL_EXCEPTION') {
+            errorMessage += 'Lỗi gọi contract. Kiểm tra số dư hoặc địa chỉ nhận.';
+        } else if (error.code === 'INSUFFICIENT_FUNDS') {
+            errorMessage += 'Không đủ ETH để trả phí gas.';
+        } else if (error.code === 4001) {
+            errorMessage += 'Bạn đã từ chối giao dịch.';
+        } else if (error.reason) {
+            errorMessage += error.reason;
+        } else if (error.data && error.data.message) {
+            errorMessage += error.data.message;
+        } else {
+            errorMessage += error.message;
+        }
+        
+        showNotification(errorMessage, 'error');
     } finally {
         showLoading(false);
     }
