@@ -11,6 +11,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadContract();
 });
 
+// Xử lý Form Nạp tiền (Deposit)
+document.getElementById('deposit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Kiểm tra kết nối ví và contract
+    if (!userAddress) {
+        showNotification('Vui lòng kết nối ví trước!', 'error');
+        return;
+    }
+    if (!contract) {
+        showNotification('Hệ thống chưa sẵn sàng (Contract chưa load).', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const amount = document.getElementById('deposit-amount').value;
+        const amountWei = ethers.utils.parseEther(amount); // Chuyển đổi sang Wei
+
+        console.log(`Đang nạp ${amount} ETH...`);
+
+        // 1. Gọi Smart Contract để nạp tiền
+        // Hàm deposit() trong Solidity là payable, nên ta gửi kèm { value: amountWei }
+        const tx = await contract.deposit({ value: amountWei });
+        
+        showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
+        
+        // Đợi transaction được đào (xác nhận)
+        const receipt = await tx.wait();
+        console.log('Deposit thành công:', receipt);
+
+        // 2. Lưu lịch sử giao dịch vào Database
+        // Trước tiên cần lấy ID tài khoản của user hiện tại
+        const accountsResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${userAddress}`);
+        const accounts = await accountsResponse.json();
+        
+        if (accounts.length > 0) {
+            const accountId = accounts[0].AccountID; // Lấy tài khoản đầu tiên
+
+            await fetch(`${CONFIG.API_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_account_id: accountId, // Nạp tiền: từ chính mình
+                    to_account_id: accountId,   // vào chính mình (hoặc có thể để null tùy logic backend)
+                    amount: parseFloat(amount),
+                    transaction_type: 'DEPOSIT',
+                    description: 'Nạp tiền vào tài khoản',
+                    blockchain_tx_hash: receipt.transactionHash
+                })
+            });
+        }
+
+        showNotification('Nạp tiền thành công!', 'success');
+        document.getElementById('deposit-form').reset();
+        
+        // Cập nhật lại giao diện
+        loadDashboard();
+        loadAccounts(); // Số dư trong DB sẽ tăng lên
+        loadTransactions();
+
+    } catch (error) {
+        console.error('Lỗi nạp tiền:', error);
+        // Hiển thị lỗi chi tiết nếu có
+        let errorMessage = error.message;
+        if (error.data && error.data.message) errorMessage = error.data.message;
+        showNotification('Nạp tiền thất bại: ' + errorMessage, 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
 // Tab Navigation
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -62,6 +135,29 @@ async function connectWallet() {
     }
 
     try {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x539' }], // 0x539 là mã Hex của 1337
+            });
+        } catch (switchError) {
+            // Nếu mạng chưa được thêm vào MetaMask, tự động thêm nó
+            if (switchError.code === 4902) {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x539',
+                        chainName: 'ganache local',
+                        rpcUrls: ['http://127.0.0.1:8545'],
+                        nativeCurrency: {
+                            name: 'ETH',
+                            symbol: 'ETH',
+                            decimals: 18
+                        }
+                    }],
+                });
+            }
+        }
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
@@ -76,7 +172,7 @@ async function connectWallet() {
         const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
         console.log(`Số dư ETH: ${balanceEth} ETH`);
         // **Lưu wallet vào database**
-        await fetch(`${CONFIG.API_URL}/users`, {
+        const createUserResponse = await fetch(`${CONFIG.API_URL}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -84,10 +180,14 @@ async function connectWallet() {
                 username: userAddress.substring(0, 8),
                 email: `${userAddress.substring(0, 8)}@wallet.com`,
                 full_name: 'Blockchain User',
-                balance: balanceEth   // <-- thêm trường balance
+                balance: balanceEth
             })
         });
 
+        if (!createUserResponse.ok) {
+            const errorData = await createUserResponse.json();
+            throw new Error(`Lỗi tạo User: ${errorData.error || createUserResponse.statusText}`);
+        }
         // Load dashboard/accounts/transactions
         await loadDashboard();
         await loadAccounts();

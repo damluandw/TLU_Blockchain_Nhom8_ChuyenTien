@@ -40,8 +40,9 @@ def create_user():
         full_name = data.get('full_name')
         wallet_address = data.get('wallet_address')
         balance = data.get('balance', 0)  # mặc định 0 nếu không có
-
-        if not all([username, email, full_name, wallet_address, balance]):
+        
+        # Loại bỏ 'balance' ra khỏi hàm all() vì balance có thể bằng 0
+        if not all([username, email, full_name, wallet_address]): 
             return jsonify({'error': 'Missing required fields'}), 400
 
         # Check if user already exists
@@ -201,9 +202,22 @@ def create_transaction():
         db.session.add(transaction)
 
         # Update balances
-        from_account.Balance = float(from_account.Balance) - amount
-        to_account.Balance = float(to_account.Balance) + amount
-
+        # Update balances based on transaction type
+        if transaction_type == 'DEPOSIT':
+            # Nạp tiền: Chỉ cộng tiền vào tài khoản nhận
+            to_account.Balance = float(to_account.Balance) + amount
+            
+        elif transaction_type == 'WITHDRAW':
+            # Rút tiền: Chỉ trừ tiền của tài khoản gửi
+            from_account.Balance = float(from_account.Balance) - amount
+            
+        else: 
+            # Chuyển tiền (TRANSFER): Trừ người gửi, cộng người nhận
+            # Nếu chuyển cho chính mình thì không trừ không cộng
+            if from_account_id != to_account_id:
+                from_account.Balance = float(from_account.Balance) - amount
+                to_account.Balance = float(to_account.Balance) + amount
+        
         db.session.commit()
 
         return jsonify({
