@@ -39,11 +39,9 @@ def create_user():
         email = data.get('email')
         full_name = data.get('full_name')
         wallet_address = data.get('wallet_address')
-        # Balance may be 0.0 so treat it as optional and default to 0
-        balance = data.get('balance', 0)
+        balance = data.get('balance', 0)  # mặc định 0 nếu không có
 
-        # Validate required string fields but allow balance == 0
-        if not all([username, email, full_name, wallet_address]):
+        if not all([username, email, full_name, wallet_address, balance]):
             return jsonify({'error': 'Missing required fields'}), 400
 
         # Check if user already exists
