@@ -6,13 +6,15 @@ from urllib.parse import quote_plus
 
 class Config:
     # Database Configuration
+    # NOTE: Use environment variables or a .env file to set sensitive values in production.
     SQL_SERVER = os.getenv('SQL_SERVER', 'localhost')
     SQL_DATABASE = os.getenv('SQL_DATABASE', 'BankingBlockchain')
-    SQL_USERNAME = os.getenv('SQL_USERNAME', 'miad')  # Default to 'sa' (SQL Server default)
-    SQL_PASSWORD = os.getenv('SQL_PASSWORD', 'Dapp@2026')  # Empty default - should be set in .env
+    SQL_USERNAME = os.getenv('SQL_USERNAME', 'sa')
+    # Do NOT hardcode production passwords here. Default to empty to force explicit set.
+    SQL_PASSWORD = os.getenv('SQL_PASSWORD', '')
 
     # Encode password
-    ENCODED_PASSWORD = quote_plus(SQL_PASSWORD)
+    ENCODED_PASSWORD = quote_plus(SQL_PASSWORD) if SQL_PASSWORD else ''
 
     # SQLAlchemy connection string
     # Encode server name if it contains backslash (for named instances)
