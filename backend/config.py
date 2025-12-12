@@ -6,10 +6,17 @@ from urllib.parse import quote_plus
 
 class Config:
     # Database Configuration
+<<<<<<< HEAD
+    SQL_SERVER = os.getenv('SQL_SERVER', 'localhost')
+    SQL_DATABASE = os.getenv('SQL_DATABASE', 'BankingBlockchain')
+    SQL_USERNAME = os.getenv('SQL_USERNAME', 'miad')  # Default to 'sa' (SQL Server default)
+    SQL_PASSWORD = os.getenv('SQL_PASSWORD', 'Dapp@2026')  # Empty default - should be set in .env
+=======
     SQL_SERVER = os.getenv('SQL_SERVER', 'DESKTOP-CRFJV4A\SQL2022')
     SQL_DATABASE = os.getenv('SQL_DATABASE', 'BLOCKCHAIN_CHUYENTIEN')
     SQL_USERNAME = os.getenv('SQL_USERNAME', 'sa')  # Default to 'sa' (SQL Server default)
     SQL_PASSWORD = os.getenv('SQL_PASSWORD', '12345')  # Empty default - should be set in .env
+>>>>>>> 06016016ae6aa335ddc93467bce481f0c5cac603
 
     # Encode password
     ENCODED_PASSWORD = quote_plus(SQL_PASSWORD)
