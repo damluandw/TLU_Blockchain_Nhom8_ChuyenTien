@@ -1,133 +1,170 @@
 <!DOCTYPE html>
 <html lang="vi">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Ngân hàng Blockchain</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hệ thống Ngân hàng Blockchain</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
 
-<body>
-    <div class="container">
-        <header>
-            <h1>🏦 Hệ thống Ngân hàng Blockchain</h1>
-            <div id="wallet-status" class="wallet-status">
-                <span id="wallet-address" class="wallet-address">Chưa kết nối ví</span>
-                <button id="connect-wallet-btn" class="btn btn-primary">Kết nối MetaMask</button>
-            </div>
-        </header>
-
-        <nav class="tabs">
-            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-            <button class="tab-btn" data-tab="accounts">Tài khoản</button>
-            <button class="tab-btn" data-tab="deposit">Nạp tiền</button>
-            <button class="tab-btn" data-tab="transfer">Chuyển tiền</button>
-            <button class="tab-btn" data-tab="transactions">Lịch sử</button>
-        </nav>
-
-        <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content active">
-            <div class="dashboard-grid">
-                <div class="card">
-                    <h3>Tổng số dư</h3>
-                    <p id="total-balance" class="balance">0 ETH</p>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🏦 Hệ thống Ngân hàng Blockchain</h1>
+                <div id="wallet-status" class="wallet-status">
+                    <span id="wallet-address" class="wallet-address">Chưa kết
+                        nối ví</span>
+                    <button id="connect-wallet-btn" class="btn btn-primary">Kết
+                        nối MetaMask</button>
                 </div>
-                <div class="card">
-                    <h3>Số tài khoản</h3>
-                    <p id="account-count">0</p>
+            </header>
+
+            <nav class="tabs">
+                <button class="tab-btn active"
+                    data-tab="dashboard">Dashboard</button>
+                <button class="tab-btn" data-tab="accounts">Tài khoản</button>
+                <button class="tab-btn" data-tab="deposit">Nạp tiền</button>
+                <button class="tab-btn" data-tab="transfer">Chuyển tiền</button>
+                <button class="tab-btn" data-tab="transactions">Lịch sử</button>
+            </nav>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Số dư Ví (MetaMask)</h3>
+                        <p id="wallet-balance" class="balance">0 ETH</p>
+                    </div>
+                    <div class="card">
+                        <h3>Tổng số dư tài khoản</h3>
+                        <p id="bank-balance" class="balance">0 ETH</p>
+                    </div>
+                    <div class="card">
+                        <h3>Tổng tài sản (Ví + Bank)</h3>
+                        <p id="total-balance" class="balance">0 ETH</p>
+                    </div>
+                    <div class="card">
+                        <h3>Số tài khoản</h3>
+                        <p id="account-count">0</p>
+                    </div>
+                    <div class="card">
+                        <h3>Tổng giao dịch</h3>
+                        <p id="transaction-count">0</p>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Accounts Tab -->
+            <div id="accounts" class="tab-content">
                 <div class="card">
-                    <h3>Tổng giao dịch</h3>
-                    <p id="transaction-count">0</p>
+                    <h2>Tạo tài khoản mới</h2>
+                    <form id="create-account-form">
+                        <div class="form-group">
+                            <label>Loại tài khoản:</label>
+                            <select id="account-type" required>
+                                <option value="CHECKING">Tài khoản thanh
+                                    toán</option>
+                                <option value="SAVINGS">Tài khoản tiết
+                                    kiệm</option>
+                                <option value="BUSINESS">Tài khoản doanh
+                                    nghiệp</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Tạo tài
+                            khoản</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h2>Danh sách tài khoản</h2>
+                    <div id="accounts-list"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- Accounts Tab -->
-        <div id="accounts" class="tab-content">
-            <div class="card">
-                <h2>Tạo tài khoản mới</h2>
-                <form id="create-account-form">
-                    <div class="form-group">
-                        <label>Loại tài khoản:</label>
-                        <select id="account-type" required>
-                            <option value="CHECKING">Tài khoản thanh toán</option>
-                            <option value="SAVINGS">Tài khoản tiết kiệm</option>
-                            <option value="BUSINESS">Tài khoản doanh nghiệp</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Tạo tài khoản</button>
-                </form>
+            <div id="deposit" class="tab-content">
+                <div class="card">
+                    <h2>Nạp tiền vào tài khoản</h2>
+                    <p>Nạp ETH từ ví MetaMask vào tài khoản ngân hàng của
+                        bạn.</p>
+                    <br>
+                    <form id="deposit-form">
+                        <div class="form-group">
+                            <label>Chọn tài khoản nạp:</label>
+                            <select id="deposit-account" required>
+                                <option value="">-- Chọn tài khoản --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Số tiền (ETH):</label>
+                            <input type="number" id="deposit-amount"
+                                step="0.0001" min="0.0001"
+                                placeholder="Ví dụ: 10"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Nạp
+                            tiền</button>
+                    </form>
+                </div>
             </div>
 
-            <div class="card">
-                <h2>Danh sách tài khoản</h2>
-                <div id="accounts-list"></div>
+            <!-- Transfer Tab -->
+            <div id="transfer" class="tab-content">
+                <div class="card">
+                    <h2>Chuyển tiền</h2>
+                    <form id="transfer-form">
+                        <div class="form-group">
+                            <label>Từ tài khoản:</label>
+                            <select id="from-account" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nguồn tiền:</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="transfer-source" value="bank" checked> Tiền trong Ngân hàng</label>
+                                <label><input type="radio" name="transfer-source" value="wallet"> Ví MetaMask</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Đến địa chỉ ví:</label>
+                            <input type="text" id="to-address"
+                                placeholder="0x..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Số tiền (ETH):</label>
+                            <input type="number" id="transfer-amount"
+                                step="0.0001" min="0.0001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mô tả:</label>
+                            <textarea id="transfer-description"
+                                rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Chuyển
+                            tiền</button>
+                    </form>
+                </div>
             </div>
-        </div>
 
-        <div id="deposit" class="tab-content">
-            <div class="card">
-                <h2>Nạp tiền vào tài khoản</h2>
-                <p>Nạp ETH từ ví MetaMask vào tài khoản ngân hàng của bạn.</p>
-                <br>
-                <form id="deposit-form">
-                    <div class="form-group">
-                        <label>Số tiền (ETH):</label>
-                        <input type="number" id="deposit-amount" step="0.0001" min="0.0001" placeholder="Ví dụ: 10"
-                            required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Nạp tiền</button>
-                </form>
+            <!-- Transactions Tab -->
+            <div id="transactions" class="tab-content">
+                <div class="card">
+                    <h2>Lịch sử giao dịch</h2>
+                    <div id="transactions-list"></div>
+                </div>
             </div>
-        </div>
 
-        <!-- Transfer Tab -->
-        <div id="transfer" class="tab-content">
-            <div class="card">
-                <h2>Chuyển tiền</h2>
-                <form id="transfer-form">
-                    <div class="form-group">
-                        <label>Từ tài khoản:</label>
-                        <select id="from-account" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>Đến địa chỉ ví:</label>
-                        <input type="text" id="to-address" placeholder="0x..." required>
-                    </div>
-                    <div class="form-group">
-                        <label>Số tiền (ETH):</label>
-                        <input type="number" id="transfer-amount" step="0.0001" min="0.0001" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Mô tả:</label>
-                        <textarea id="transfer-description" rows="3"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Chuyển tiền</button>
-                </form>
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Đang xử lý...</p>
             </div>
+
+            <div id="notification" class="notification hidden"></div>
         </div>
 
-        <!-- Transactions Tab -->
-        <div id="transactions" class="tab-content">
-            <div class="card">
-                <h2>Lịch sử giao dịch</h2>
-                <div id="transactions-list"></div>
-            </div>
-        </div>
-
-        <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>Đang xử lý...</p>
-        </div>
-
-        <div id="notification" class="notification hidden"></div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-</body>
+        <script
+            src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+        <script src="config.js"></script>
+        <script src="app.js"></script>
+    </body>
 
 </html>

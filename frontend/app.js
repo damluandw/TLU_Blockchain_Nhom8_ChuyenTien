@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Xử lý Form Nạp tiền (Deposit)
 document.getElementById('deposit-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     // Kiểm tra kết nối ví và contract
     if (!userAddress) {
         showNotification('Vui lòng kết nối ví trước!', 'error');
@@ -36,27 +36,24 @@ document.getElementById('deposit-form').addEventListener('submit', async (e) => 
         // 1. Gọi Smart Contract để nạp tiền
         // Hàm deposit() trong Solidity là payable, nên ta gửi kèm { value: amountWei }
         const tx = await contract.deposit({ value: amountWei });
-        
+
         showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
-        
+
         // Đợi transaction được đào (xác nhận)
         const receipt = await tx.wait();
         console.log('Deposit thành công:', receipt);
 
         // 2. Lưu lịch sử giao dịch vào Database
-        // Trước tiên cần lấy ID tài khoản của user hiện tại
-        const accountsResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${userAddress}`);
-        const accounts = await accountsResponse.json();
-        
-        if (accounts.length > 0) {
-            const accountId = accounts[0].AccountID; // Lấy tài khoản đầu tiên
+        // Lấy ID tài khoản đã chọn
+        const accountId = document.getElementById('deposit-account').value;
 
+        if (accountId) {
             await fetch(`${CONFIG.API_URL}/transactions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    from_account_id: accountId, // Nạp tiền: từ chính mình
-                    to_account_id: accountId,   // vào chính mình (hoặc có thể để null tùy logic backend)
+                    from_account_id: accountId, // Nạp tiền: ghi cho tài khoản này
+                    to_account_id: accountId,
                     amount: parseFloat(amount),
                     transaction_type: 'DEPOSIT',
                     description: 'Nạp tiền vào tài khoản',
@@ -67,7 +64,7 @@ document.getElementById('deposit-form').addEventListener('submit', async (e) => 
 
         showNotification('Nạp tiền thành công!', 'success');
         document.getElementById('deposit-form').reset();
-        
+
         // Cập nhật lại giao diện
         loadDashboard();
         loadAccounts(); // Số dư trong DB sẽ tăng lên
@@ -254,19 +251,39 @@ async function loadDashboard() {
     if (!userAddress) return;
 
     try {
+        let walletBalance = 0;
+        let bankBalance = 0;
+
+        // Load Wallet Balance
+        if (provider) {
+            const balanceWei = await provider.getBalance(userAddress);
+            walletBalance = parseFloat(ethers.utils.formatEther(balanceWei));
+            const walletBalanceEl = document.getElementById('wallet-balance');
+            if (walletBalanceEl) {
+                walletBalanceEl.textContent = walletBalance.toFixed(4) + ' ETH';
+            }
+        }
+
         const accountsResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${userAddress}`);
         if (accountsResponse.ok) {
             const accounts = await accountsResponse.json();
             document.getElementById('account-count').textContent = accounts.length;
 
-            let totalBalance = 0;
             console.log('accounts', accounts);
             accounts.forEach(acc => {
-                console.log('acc.Balance', acc.Balance);
-                if (acc.Balance) {
-                    totalBalance += acc.Balance;
-                }
+                // User requested total balance from Account table specifically
+                const balance = acc.Balance || 0;
+                bankBalance += balance;
             });
+
+            // Update Bank Balance
+            const bankBalanceEl = document.getElementById('bank-balance');
+            if (bankBalanceEl) {
+                bankBalanceEl.textContent = bankBalance.toFixed(4) + ' ETH';
+            }
+
+            // Update Total Balance (Wallet + Bank)
+            const totalBalance = walletBalance + bankBalance;
             console.log('totalBalance', totalBalance);
             document.getElementById('total-balance').textContent = totalBalance.toFixed(4) + ' ETH';
         }
@@ -302,22 +319,32 @@ async function loadAccounts() {
         if (accounts.length === 0) {
             accountsList.innerHTML = '<p>Chưa có tài khoản nào. Hãy tạo tài khoản mới!</p>';
         } else {
-            accountsList.innerHTML = accounts.map(acc => `
+            accountsList.innerHTML = accounts.map(acc => {
+                const bcBalance = acc.blockchain_balance ? acc.blockchain_balance.toFixed(4) : '0';
+                return `
                 <div class="account-item">
                     <div class="account-info">
                         <h4>${acc.AccountNumber}</h4>
                         <p>Loại: ${acc.AccountType}</p>
-                        <p>Số dư: ${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH</p>
+                        <p>Số dư: ${acc.Balance} ETH</p>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Populate transfer form
         const fromAccountSelect = document.getElementById('from-account');
         fromAccountSelect.innerHTML = accounts.map(acc =>
-            `<option value="${acc.AccountID}">${acc.AccountNumber} (${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH)</option>`
+            `<option value="${acc.AccountID}" data-balance="${acc.blockchain_balance || 0}">${acc.AccountNumber} (Số dư: ${acc.Balance ? acc.Balance.toFixed(4) : '0'} ETH)</option>`
         ).join('');
+
+        // Populate deposit form
+        const depositAccountSelect = document.getElementById('deposit-account');
+        if (depositAccountSelect) {
+            depositAccountSelect.innerHTML = `<option value="">-- Chọn tài khoản --</option>` + accounts.map(acc =>
+                `<option value="${acc.AccountID}">${acc.AccountNumber}</option>`
+            ).join('');
+        }
     } catch (error) {
         console.error('Error loading accounts:', error);
         showNotification('Lỗi tải tài khoản: ' + error.message, 'error');
@@ -369,7 +396,7 @@ document.getElementById('create-account-form').addEventListener('submit', async 
                 user_id: user.UserID,
                 account_type: accountType,
                 wallet_address: userAddress,
-                balance:  user.Balance
+                balance: 0 // Initial balance must be 0 explicitly
             })
         });
 
@@ -431,21 +458,73 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
             throw new Error('Địa chỉ ví không hợp lệ');
         }
 
+        // Check Source selection
+        const transferSource = document.querySelector('input[name="transfer-source"]:checked').value;
+        const amountWei = ethers.utils.parseEther(amount);
+
         console.log('=== BẮT ĐẦU CHUYỂN TIỀN ===');
         console.log('From Account ID:', fromAccountId);
         console.log('To Address:', toAddress);
         console.log('Amount:', amount);
+        console.log('Source:', transferSource);
 
         // Get account info
         const accountResponse = await fetch(`${CONFIG.API_URL}/accounts/${fromAccountId}`);
         if (!accountResponse.ok) throw new Error('Không tìm thấy tài khoản nguồn');
         const fromAccount = await accountResponse.json();
-        
+
         console.log('From Account:', fromAccount);
 
-        // Check balance
-        if (parseFloat(fromAccount.Balance) < parseFloat(amount)) {
-            throw new Error('Số dư không đủ');
+        // CHECK BALANCE
+        if (transferSource === 'bank') {
+            // Check Bank Balance
+            const selectedOption = document.getElementById('from-account').options[document.getElementById('from-account').selectedIndex];
+            const availableBalance = parseFloat(selectedOption.getAttribute('data-balance') || 0);
+
+            if (availableBalance < parseFloat(amount)) {
+                throw new Error(`Tiền trong Ngân hàng không đủ (${availableBalance} ETH). Vui lòng chọn "Ví MetaMask" để nạp và chuyển ngay, hoặc nạp tiền trước.`);
+            }
+        } else {
+            // Check Wallet Balance
+            const balanceWei = await provider.getBalance(userAddress);
+            const balanceEth = parseFloat(ethers.utils.formatEther(balanceWei));
+            if (balanceEth < parseFloat(amount)) {
+                throw new Error(`Số dư Ví MetaMask không đủ (${balanceEth} ETH) để thực hiện giao dịch.`);
+            }
+
+            // DIRECT TRANSFER FROM WALLET
+            showNotification('Đang thực hiện chuyển tiền từ Ví...', 'info');
+
+            // Call the new transferFromWallet function
+            const transactionHash = `TXN${Date.now()}`;
+            const tx = await contract.transferFromWallet(toAddress, transactionHash, { value: amountWei });
+
+            showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
+            const receipt = await tx.wait();
+            console.log('Direct Transfer confirmed:', receipt);
+
+            // Log to DB
+            await fetch(`${CONFIG.API_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_account_id: parseInt(fromAccountId),
+                    to_account_id: toAccountId || parseInt(fromAccountId),
+                    amount: parseFloat(amount),
+                    transaction_type: 'TRANSFER',
+                    description: description + ' (Từ Ví -> Ví)',
+                    blockchain_tx_hash: receipt.transactionHash
+                })
+            });
+
+            showNotification('Chuyển tiền thành công!', 'success');
+            document.getElementById('transfer-form').reset();
+
+            // Reload data
+            await loadAccounts();
+            await loadTransactions();
+            await loadDashboard();
+            return; // Exit here as we handled everything
         }
 
         // Get to account
@@ -465,24 +544,23 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
         // Check if recipient account exists on blockchain
         const recipientExists = await contract.accountExist(toAddress);
         console.log('Recipient exists on blockchain:', recipientExists);
-        
+
         if (!recipientExists) {
             throw new Error('Địa chỉ nhận chưa có tài khoản trên blockchain. Người nhận cần tạo tài khoản trước.');
         }
 
         // Execute transfer on blockchain
-        const amountWei = ethers.utils.parseEther(amount);
         const transactionHash = `TXN${Date.now()}`;
-        
+
         console.log('Calling contract.transfer()...');
         console.log('Amount in Wei:', amountWei.toString());
         console.log('Transaction Hash:', transactionHash);
 
         const tx = await contract.transfer(toAddress, amountWei, transactionHash);
         console.log('Transaction sent:', tx.hash);
-        
-        showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
-        
+
+        showNotification('Giao dịch chuyển tiền đã được gửi. Vui lòng đợi xác nhận...', 'info');
+
         const receipt = await tx.wait();
         console.log('Transaction confirmed:', receipt);
 
@@ -495,7 +573,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
                 to_account_id: toAccountId || parseInt(fromAccountId), // Fallback
                 amount: parseFloat(amount),
                 transaction_type: 'TRANSFER',
-                description: description,
+                description: description + (transferSource === 'wallet' ? ' (Từ Ví)' : ''),
                 blockchain_tx_hash: receipt.transactionHash
             })
         });
@@ -508,18 +586,18 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
         showNotification('Chuyển tiền thành công!', 'success');
         document.getElementById('transfer-form').reset();
-        
+
         // Reload data
         await loadAccounts();
         await loadTransactions();
         await loadDashboard();
-        
+
     } catch (error) {
         console.error('=== LỖI CHUYỂN TIỀN ===');
         console.error('Error:', error);
-        
+
         let errorMessage = 'Lỗi chuyển tiền: ';
-        
+
         if (error.code === 'CALL_EXCEPTION') {
             errorMessage += 'Lỗi gọi contract. Kiểm tra số dư hoặc địa chỉ nhận.';
         } else if (error.code === 'INSUFFICIENT_FUNDS') {
@@ -533,7 +611,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
         } else {
             errorMessage += error.message;
         }
-        
+
         showNotification(errorMessage, 'error');
     } finally {
         showLoading(false);

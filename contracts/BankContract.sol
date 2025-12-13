@@ -156,6 +156,43 @@ contract BankContract {
         
         emit Transfer(msg.sender, _to, _amount, _transactionHash, block.timestamp);
     }
+
+    /**
+     * @dev Chuyển tiền trực tiếp từ ví vào tài khoản người khác
+     * @param _to Địa chỉ ví người nhận
+     * @param _transactionHash Hash giao dịch từ database
+     */
+    function transferFromWallet(
+        address _to,
+        string memory _transactionHash
+    ) public payable {
+        require(_to != address(0), "Invalid recipient address");
+        require(msg.value > 0, "Amount must be greater than 0");
+        require(accounts[_to].exists, "Recipient account does not exist");
+        
+        // CHUYỂN TIỀN TRỰC TIẾP VÀO VÍ NGƯỜI NHẬN
+        // Không cộng vào balance nội bộ mà gửi thẳng ETH đi
+        payable(_to).transfer(msg.value);
+        
+        // Lưu thông tin giao dịch vào blockchain
+        uint256 transactionId = totalTransactions;
+        transactions[transactionId] = TransactionRecord({
+            from: msg.sender,
+            to: _to,
+            amount: msg.value,
+            timestamp: block.timestamp,
+            transactionHash: _transactionHash,
+            exists: true
+        });
+        
+        // Thêm transaction ID vào danh sách của người chuyển và người nhận
+        userTransactions[msg.sender].push(transactionId);
+        userTransactions[_to].push(transactionId);
+        
+        totalTransactions++;
+        
+        emit Transfer(msg.sender, _to, msg.value, _transactionHash, block.timestamp);
+    }
     
     /**
      * @dev Lấy số dư tài khoản
