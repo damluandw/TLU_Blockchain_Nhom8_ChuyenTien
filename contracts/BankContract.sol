@@ -135,7 +135,10 @@ contract BankContract {
         require(accounts[_to].exists, "Recipient account does not exist");
         
         accounts[msg.sender].balance -= _amount;
-        accounts[_to].balance += _amount;
+        
+        // CHUYỂN TIỀN TRỰC TIẾP VÀO VÍ NGƯỜI NHẬN
+        // Không cộng vào balance nội bộ mà gửi thẳng ETH đi
+        payable(_to).transfer(_amount);
         
         // Lưu thông tin giao dịch vào blockchain
         uint256 transactionId = totalTransactions;

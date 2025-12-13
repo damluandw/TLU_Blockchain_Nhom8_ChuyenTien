@@ -427,6 +427,81 @@ document.getElementById('create-account-form').addEventListener('submit', async 
     }
 });
 
+// Deposit Form
+document.getElementById('deposit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!userAddress) {
+        showNotification('Vui lòng kết nối ví trước!', 'error');
+        return;
+    }
+
+    if (!contract) {
+        showNotification('Contract chưa được cấu hình!', 'error');
+        return;
+    }
+
+    showLoading(true);
+
+    try {
+        const amount = document.getElementById('deposit-amount').value;
+        if (!amount || parseFloat(amount) <= 0) {
+            throw new Error('Vui lòng nhập số tiền hợp lệ');
+        }
+
+        const amountWei = ethers.utils.parseEther(amount);
+
+        showNotification('Vui lòng xác nhận giao dịch trên ví...', 'info');
+
+        // 1. Thực hiện nạp tiền trên Blockchain
+        // Gọi hàm deposit của Smart Contract
+        // Hàm này sẽ nhận ETH từ ví và cộng vào balance của sender trong contract
+        console.log('Depositing...', amount);
+        const tx = await contract.deposit({ value: amountWei });
+
+        showNotification('Giao dịch nạp tiền đã được gửi. Vui lòng đợi xác nhận...', 'info');
+        const receipt = await tx.wait();
+        console.log('Deposit confirmed:', receipt);
+
+        // 2. Lưu lịch sử giao dịch vào Database
+        // Lấy ID tài khoản đã chọn
+        const accountId = document.getElementById('deposit-account').value;
+        console.log('Deposit to Account ID:', accountId);
+
+        if (accountId) {
+            await fetch(`${CONFIG.API_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_account_id: accountId, // Nạp tiền: ghi log cho chính tài khoản này
+                    to_account_id: accountId,
+                    amount: parseFloat(amount),
+                    transaction_type: 'DEPOSIT',
+                    description: 'Nạp tiền vào tài khoản',
+                    blockchain_tx_hash: receipt.transactionHash
+                })
+            });
+        }
+
+        showNotification('Nạp tiền thành công!', 'success');
+        document.getElementById('deposit-form').reset();
+
+        // Reload data
+        await loadAccounts();
+        await loadDashboard();
+        await loadTransactions();
+
+    } catch (error) {
+        console.error('Error depositing:', error);
+        if (error.code === 4001) {
+            showNotification('Bạn đã từ chối giao dịch.', 'error');
+        } else {
+            showNotification('Lỗi nạp tiền: ' + (error.data?.message || error.message), 'error');
+        }
+    } finally {
+        showLoading(false);
+    }
+});
+
 // Transfer Form
 document.getElementById('transfer-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -475,7 +550,21 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
         console.log('From Account:', fromAccount);
 
-        // CHECK BALANCE
+        // Get to account info/ID first (needed for both flow logging)
+        let toAccountResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${toAddress}`);
+        let toAccountId;
+
+        if (toAccountResponse.ok) {
+            const toAccounts = await toAccountResponse.json();
+            if (toAccounts.length > 0) {
+                toAccountId = toAccounts[0].AccountID;
+                console.log('To Account ID:', toAccountId);
+            } else {
+                console.log('Người nhận chưa có tài khoản trong hệ thống');
+            }
+        }
+
+        // CHECK BALANCE & EXECUTE
         if (transferSource === 'bank') {
             // Check Bank Balance
             const selectedOption = document.getElementById('from-account').options[document.getElementById('from-account').selectedIndex];
@@ -484,6 +573,33 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
             if (availableBalance < parseFloat(amount)) {
                 throw new Error(`Tiền trong Ngân hàng không đủ (${availableBalance} ETH). Vui lòng chọn "Ví MetaMask" để nạp và chuyển ngay, hoặc nạp tiền trước.`);
             }
+
+            // Verify recipient exists on blockchain (Standard requirement for Bank Transfer)
+            const recipientExists = await contract.accountExist(toAddress);
+            if (!recipientExists) {
+                throw new Error('Địa chỉ nhận chưa có tài khoản trên blockchain. Người nhận cần tạo tài khoản trước.');
+            }
+
+            // Execute Bank Transfer
+            const transactionHash = `TXN${Date.now()}`;
+            const tx = await contract.transfer(toAddress, amountWei, transactionHash);
+            showNotification('Giao dịch chuyển tiền đã được gửi...', 'info');
+            const receipt = await tx.wait();
+
+            // Log to DB
+            await fetch(`${CONFIG.API_URL}/transactions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    from_account_id: parseInt(fromAccountId),
+                    to_account_id: toAccountId || parseInt(fromAccountId),
+                    amount: parseFloat(amount),
+                    transaction_type: 'TRANSFER',
+                    description: description,
+                    blockchain_tx_hash: receipt.transactionHash
+                })
+            });
+
         } else {
             // Check Wallet Balance
             const balanceWei = await provider.getBalance(userAddress);
@@ -497,6 +613,15 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 
             // Call the new transferFromWallet function
             const transactionHash = `TXN${Date.now()}`;
+            // NOTE: recipient doesn't strictly need a bank account for direct transfer, 
+            // but for consistency with 'transferFromWallet' logic which credits internal account if it exists?
+            // Actually contract requires: require(accounts[_to].exists, "Recipient account does not exist");
+            // So we MUST check existence too.
+            const recipientExists = await contract.accountExist(toAddress);
+            if (!recipientExists) {
+                throw new Error('Địa chỉ nhận chưa kích hoạt tài khoản ngân hàng (trên Smart Contract).');
+            }
+
             const tx = await contract.transferFromWallet(toAddress, transactionHash, { value: amountWei });
 
             showNotification('Giao dịch đã được gửi. Vui lòng đợi xác nhận...', 'info');
@@ -516,72 +641,6 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
                     blockchain_tx_hash: receipt.transactionHash
                 })
             });
-
-            showNotification('Chuyển tiền thành công!', 'success');
-            document.getElementById('transfer-form').reset();
-
-            // Reload data
-            await loadAccounts();
-            await loadTransactions();
-            await loadDashboard();
-            return; // Exit here as we handled everything
-        }
-
-        // Get to account
-        let toAccountResponse = await fetch(`${CONFIG.API_URL}/accounts/user/${toAddress}`);
-        let toAccountId;
-
-        if (toAccountResponse.ok) {
-            const toAccounts = await toAccountResponse.json();
-            if (toAccounts.length > 0) {
-                toAccountId = toAccounts[0].AccountID;
-                console.log('To Account ID:', toAccountId);
-            } else {
-                console.log('Người nhận chưa có tài khoản trong hệ thống');
-            }
-        }
-
-        // Check if recipient account exists on blockchain
-        const recipientExists = await contract.accountExist(toAddress);
-        console.log('Recipient exists on blockchain:', recipientExists);
-
-        if (!recipientExists) {
-            throw new Error('Địa chỉ nhận chưa có tài khoản trên blockchain. Người nhận cần tạo tài khoản trước.');
-        }
-
-        // Execute transfer on blockchain
-        const transactionHash = `TXN${Date.now()}`;
-
-        console.log('Calling contract.transfer()...');
-        console.log('Amount in Wei:', amountWei.toString());
-        console.log('Transaction Hash:', transactionHash);
-
-        const tx = await contract.transfer(toAddress, amountWei, transactionHash);
-        console.log('Transaction sent:', tx.hash);
-
-        showNotification('Giao dịch chuyển tiền đã được gửi. Vui lòng đợi xác nhận...', 'info');
-
-        const receipt = await tx.wait();
-        console.log('Transaction confirmed:', receipt);
-
-        // Create transaction in database
-        const txResponse = await fetch(`${CONFIG.API_URL}/transactions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                from_account_id: parseInt(fromAccountId),
-                to_account_id: toAccountId || parseInt(fromAccountId), // Fallback
-                amount: parseFloat(amount),
-                transaction_type: 'TRANSFER',
-                description: description + (transferSource === 'wallet' ? ' (Từ Ví)' : ''),
-                blockchain_tx_hash: receipt.transactionHash
-            })
-        });
-
-        if (!txResponse.ok) {
-            const errorData = await txResponse.json();
-            console.error('Database error:', errorData);
-            throw new Error('Lỗi lưu giao dịch vào database: ' + (errorData.error || 'Unknown'));
         }
 
         showNotification('Chuyển tiền thành công!', 'success');

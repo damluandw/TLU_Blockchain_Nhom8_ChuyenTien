@@ -1,7 +1,7 @@
 // Configuration
 const CONFIG = {
     API_URL: 'http://localhost:5000/api',
-    CONTRACT_ADDRESS: "0x3801ed3bDA85270D6497b0f5242F0d97Bb974835",
+    CONTRACT_ADDRESS: "0x41EE5900635350d9Ec29E8100F51E153224D47c8",
     CONTRACT_ABI: [
         {
             "inputs": [],
@@ -137,7 +137,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -171,7 +172,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -190,7 +192,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [],
@@ -203,7 +206,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [],
@@ -216,7 +220,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -260,7 +265,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -284,7 +290,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -304,7 +311,8 @@ const CONFIG = {
             "name": "deposit",
             "outputs": [],
             "stateMutability": "payable",
-            "type": "function"
+            "type": "function",
+            "payable": true
         },
         {
             "inputs": [
@@ -358,7 +366,8 @@ const CONFIG = {
             "name": "transferFromWallet",
             "outputs": [],
             "stateMutability": "payable",
-            "type": "function"
+            "type": "function",
+            "payable": true
         },
         {
             "inputs": [
@@ -377,7 +386,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -396,7 +406,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -430,7 +441,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [],
@@ -443,7 +455,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -462,7 +475,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -501,7 +515,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -520,7 +535,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [
@@ -549,7 +565,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         },
         {
             "inputs": [],
@@ -562,7 +579,8 @@ const CONFIG = {
                 }
             ],
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "constant": true
         }
     ]
 };
